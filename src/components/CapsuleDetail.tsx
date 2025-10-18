@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -71,8 +71,12 @@ interface CapsuleDetailProps {
   onBack: () => void;
 }
 
+const API_URL = "http://localhost:5001";
+
 export const CapsuleDetail = ({ capsuleType, onBack }: CapsuleDetailProps) => {
   const [activeTab, setActiveTab] = useState("overview");
+  const [auditLog, setAuditLog] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   
   const config = capsuleConfig[capsuleType] || capsuleConfig.medical;
   const Icon = config.icon;
@@ -96,11 +100,33 @@ export const CapsuleDetail = ({ capsuleType, onBack }: CapsuleDetailProps) => {
     { name: "John Doe (Family)", access: "View Only", expires: "90 days", status: "pending" }
   ];
 
-  const history = [
-    { date: "2 hours ago", action: "Accessed by Dr. Sarah Johnson", type: "view" },
-    { date: "1 day ago", action: "Updated medications list", type: "edit" },
-    { date: "3 days ago", action: "Emergency access granted to City Hospital", type: "grant" },
-    { date: "1 week ago", action: "Added new allergy information", type: "edit" }
+  // Fetch audit log from blockchain
+  useEffect(() => {
+    const fetchAuditLog = async () => {
+      if (activeTab === "history") {
+        setLoading(true);
+        try {
+          const response = await fetch(`${API_URL}/api/capsules/cap_1/audit`);
+          if (response.ok) {
+            const data = await response.json();
+            setAuditLog(data.accessLog || []);
+          }
+        } catch (error) {
+          console.error('Error fetching audit log:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    fetchAuditLog();
+  }, [activeTab]);
+
+  const history = auditLog.length > 0 ? auditLog.map(event => ({
+    date: new Date(event.timestamp).toLocaleString(),
+    action: `${event.event} by ${event.accessorId}`,
+    type: event.event === "BurstKeyIssued" ? "grant" : "view"
+  })) : [
+    { date: "No access history yet", action: "Waiting for first access...", type: "view" }
   ];
 
   return (

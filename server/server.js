@@ -4,9 +4,10 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const { getConnectionStatus, storeCapsuleOnBlockchain, issueBurstKeyOnChain, consumeBurstKeyOnChain } = require('./blockchain');
-const { createCapsule, getCapsule, getDecryptedCapsuleContent, listUserCapsules, getAllCapsules } = require('./services/capsuleService');
-const { issueBurstKey, verifyAndConsumeBurstKey, getCapsuleBurstKeys } = require('./utils/burstKey');
+const { createCapsule, getCapsule, getDecryptedCapsuleContent, listUserCapsules, getAllCapsules, updateCapsuleBlockchainId } = require('./services/capsuleService');
+const { issueBurstKey, verifyAndConsumeBurstKey, getCapsuleBurstKeys, updateBurstKeyBlockchainId } = require('./utils/burstKey');
 const { computeCanonicalHash } = require('./utils/hash');
+const { addPendingTransaction, updateTransactionStatus, getCapsuleTransactions, getQueueStats } = require('./utils/transactionQueue');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -15,13 +16,21 @@ const PORT = process.env.PORT || 5001;
 app.use(helmet());
 
 // CORS configuration
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:3000').split(',');
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:3000,http://localhost:8080')
+  .split(',')
+  .map(origin => origin.trim());
+
+console.log('🔓 [CORS] Allowed origins:', allowedOrigins);
+
 app.use(cors({
   origin: (origin, callback) => {
+    console.log(`🔍 [CORS] Request from origin: ${origin}`);
     if (!origin) return callback(null, true); // Allow non-browser requests
     if (allowedOrigins.includes(origin)) {
+      console.log(`✅ [CORS] Origin allowed: ${origin}`);
       return callback(null, true);
     }
+    console.error(`❌ [CORS] Origin rejected: ${origin}`);
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
@@ -76,23 +85,40 @@ app.post('/api/capsules', async (req, res) => {
     // Create capsule
     const capsule = await createCapsule(userId, capsuleData, publicKey);
     
-    // Store hash on BlockDAG
-    let blockchainResult = null;
-    try {
-      blockchainResult = await storeCapsuleOnBlockchain(
-        capsule.contentHash,
-        capsule.capsuleType
-      );
-      console.log('✅ [API] Capsule logged on BlockDAG:', blockchainResult.txHash);
-    } catch (blockchainError) {
-      console.error('⚠️  [API] Failed to log on BlockDAG:', blockchainError.message);
-      // Continue even if blockchain logging fails
-    }
+    // Store hash on BlockDAG (non-blocking with queue)
+    let blockchainStatus = { status: 'queued', message: 'Transaction queued for processing' };
+    
+    // Process blockchain transaction asynchronously
+    setImmediate(async () => {
+      try {
+        const blockchainResult = await storeCapsuleOnBlockchain(
+          capsule.contentHash,
+          capsule.capsuleType
+        );
+        
+        console.log('✅ [API] Capsule logged on BlockDAG:', blockchainResult.txHash);
+        
+        // Add to queue
+        const queuedTx = addPendingTransaction('capsule', blockchainResult.txHash, {
+          capsuleId: capsule.id,
+          contentHash: capsule.contentHash
+        });
+        
+        // Update capsule with blockchain ID
+        if (blockchainResult && blockchainResult.capsuleId !== null) {
+          await updateCapsuleBlockchainId(capsule.id, blockchainResult.capsuleId);
+          updateTransactionStatus(queuedTx.txId, 'confirmed', blockchainResult);
+        }
+      } catch (blockchainError) {
+        console.error('⚠️  [API] Failed to log on BlockDAG:', blockchainError.message);
+        // System continues to work without blockchain
+      }
+    });
     
     res.json({
       success: true,
       capsule: capsule,
-      blockchain: blockchainResult
+      blockchain: blockchainStatus
     });
   } catch (error) {
     console.error('❌ [API] Error creating capsule:', error);
@@ -196,20 +222,46 @@ app.post('/api/emergency/request-access', async (req, res) => {
       context
     );
     
-    // Log on BlockDAG
-    let blockchainResult = null;
-    try {
-      const contextHash = computeCanonicalHash(JSON.stringify(context || {}));
-      blockchainResult = await issueBurstKeyOnChain(
-        capsule.id,
-        medicPubKey || medicId,
-        burstKeyResult.expiresAt,
-        contextHash
-      );
-      console.log('✅ [API] BurstKey logged on BlockDAG');
-    } catch (blockchainError) {
-      console.error('⚠️  [API] Failed to log BurstKey on BlockDAG:', blockchainError.message);
-    }
+    // Log on BlockDAG (non-blocking)
+    let blockchainStatus = { status: 'pending', message: 'BurstKey issuance will be logged on blockchain' };
+    
+    // Process blockchain transaction asynchronously
+    setImmediate(async () => {
+      try {
+        // Check if capsule has blockchain ID
+        if (capsule.blockchainId === null || capsule.blockchainId === undefined) {
+          console.warn('⚠️  [API] Capsule has no blockchain ID - skipping BurstKey blockchain logging');
+          return;
+        }
+        
+        const contextHash = computeCanonicalHash(JSON.stringify(context || {}));
+        const blockchainResult = await issueBurstKeyOnChain(
+          capsule.blockchainId,
+          medicPubKey || medicId,
+          burstKeyResult.expiresAt,
+          contextHash
+        );
+        
+        if (blockchainResult.success) {
+          console.log('✅ [API] BurstKey logged on BlockDAG');
+          
+          // Add to queue
+          const queuedTx = addPendingTransaction('burstkey', blockchainResult.txHash, {
+            capsuleId: capsule.id,
+            burstId: burstKeyResult.burstId
+          });
+          
+          // Update BurstKey with blockchain ID
+          if (blockchainResult.burstKeyId) {
+            await updateBurstKeyBlockchainId(burstKeyResult.burstKey, blockchainResult.burstKeyId);
+            updateTransactionStatus(queuedTx.txId, 'confirmed', blockchainResult);
+          }
+        }
+      } catch (blockchainError) {
+        console.error('⚠️  [API] Failed to log BurstKey on BlockDAG:', blockchainError.message);
+        // System continues to work without blockchain
+      }
+    });
     
     res.json({
       success: true,
@@ -217,7 +269,7 @@ app.post('/api/emergency/request-access', async (req, res) => {
       burstId: burstKeyResult.burstId,
       expiresAt: burstKeyResult.expiresAt,
       expiresIn: burstKeyResult.expiresIn,
-      blockchain: blockchainResult
+      blockchain: blockchainStatus
     });
   } catch (error) {
     console.error('❌ [API] Error requesting access:', error);
@@ -253,13 +305,30 @@ app.post('/api/emergency/access-capsule', async (req, res) => {
     // Get decrypted capsule content
     const capsule = await getDecryptedCapsuleContent(verifyResult.capsuleId);
     
-    // Log consumption on BlockDAG
-    try {
-      await consumeBurstKeyOnChain(verifyResult.burstId);
-      console.log('✅ [API] BurstKey consumption logged on BlockDAG');
-    } catch (blockchainError) {
-      console.error('⚠️  [API] Failed to log consumption on BlockDAG:', blockchainError.message);
-    }
+    // Log consumption on BlockDAG (non-blocking)
+    setImmediate(async () => {
+      try {
+        // Only log if we have a blockchain BurstKey ID
+        if (verifyResult.blockchainBurstKeyId !== null && verifyResult.blockchainBurstKeyId !== undefined) {
+          const consumptionResult = await consumeBurstKeyOnChain(verifyResult.blockchainBurstKeyId);
+          
+          if (consumptionResult.success) {
+            console.log('✅ [API] BurstKey consumption logged on BlockDAG');
+            
+            // Add to queue
+            addPendingTransaction('consumption', consumptionResult.txHash, {
+              capsuleId: verifyResult.capsuleId,
+              burstId: verifyResult.burstId
+            });
+          }
+        } else {
+          console.warn('⚠️  [API] No blockchain BurstKey ID - skipping consumption logging');
+        }
+      } catch (blockchainError) {
+        console.error('⚠️  [API] Failed to log consumption on BlockDAG:', blockchainError.message);
+        // System continues to work without blockchain
+      }
+    });
     
     res.json({
       success: true,
@@ -271,6 +340,53 @@ app.post('/api/emergency/access-capsule', async (req, res) => {
     });
   } catch (error) {
     console.error('❌ [API] Error accessing capsule:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get capsule blockchain transactions
+app.get('/api/capsules/:id/transactions', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Verify capsule exists
+    const capsule = await getCapsule(id);
+    if (!capsule) {
+      return res.status(404).json({
+        success: false,
+        error: 'Capsule not found'
+      });
+    }
+    
+    const transactions = getCapsuleTransactions(id);
+    
+    res.json({
+      success: true,
+      capsuleId: id,
+      blockchainId: capsule.blockchainId,
+      transactions: transactions
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get transaction queue status
+app.get('/api/queue/status', async (req, res) => {
+  try {
+    const stats = getQueueStats();
+    
+    res.json({
+      success: true,
+      queue: stats
+    });
+  } catch (error) {
     res.status(500).json({
       success: false,
       error: error.message
@@ -380,10 +496,14 @@ app.listen(PORT, () => {
   console.log('  GET  /api/capsules                      - List capsules');
   console.log('  GET  /api/capsules/:id                  - Get capsule');
   console.log('  GET  /api/capsules/:id/audit            - Get access log');
+  console.log('  GET  /api/capsules/:id/transactions     - Get blockchain TXs');
   console.log('');
   console.log('  🚨 Emergency Access (PulseKey):');
   console.log('  POST /api/emergency/request-access      - Request BurstKey');
   console.log('  POST /api/emergency/access-capsule      - Use BurstKey');
+  console.log('');
+  console.log('  📊 Transaction Queue:');
+  console.log('  GET  /api/queue/status                  - Queue statistics');
   console.log('');
   console.log('✅ Server ready!');
   console.log('🚀 ========================================');

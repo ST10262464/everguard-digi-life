@@ -32,6 +32,7 @@ async function issueBurstKey(capsuleId, accessorId, accessorPubKey, context) {
     
     const burstKeyData = {
       burstId: burstId,
+      blockchainBurstKeyId: null, // Will be set after blockchain logging
       burstKey: burstKey,
       capsuleId: capsuleId,
       accessorId: accessorId,
@@ -109,6 +110,7 @@ async function verifyAndConsumeBurstKey(burstKey, accessorId) {
       valid: true,
       capsuleId: burstKeyData.capsuleId,
       burstId: burstKeyData.burstId,
+      blockchainBurstKeyId: burstKeyData.blockchainBurstKeyId,
       context: burstKeyData.context
     };
   } catch (error) {
@@ -166,6 +168,27 @@ async function getCapsuleBurstKeys(capsuleId) {
 }
 
 /**
+ * Update BurstKey with blockchain ID
+ */
+async function updateBurstKeyBlockchainId(burstKey, blockchainBurstKeyId) {
+  try {
+    const burstKeyData = burstKeys.get(burstKey);
+    
+    if (!burstKeyData) {
+      throw new Error('BurstKey not found');
+    }
+    
+    burstKeyData.blockchainBurstKeyId = blockchainBurstKeyId;
+    
+    console.log(`🔗 [BURSTKEY] Updated blockchain ID for ${burstKeyData.burstId}: ${blockchainBurstKeyId}`);
+    return burstKeyData;
+  } catch (error) {
+    console.error('❌ [BURSTKEY] Error updating blockchain ID:', error);
+    throw error;
+  }
+}
+
+/**
  * Cleanup expired BurstKeys (optional maintenance)
  */
 function cleanupExpiredBurstKeys() {
@@ -193,6 +216,7 @@ module.exports = {
   getBurstKeyById,
   isBurstKeyValid,
   getCapsuleBurstKeys,
+  updateBurstKeyBlockchainId,
   cleanupExpiredBurstKeys,
   BURST_KEY_DURATION
 };

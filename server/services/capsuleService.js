@@ -25,6 +25,7 @@ async function createCapsule(userId, capsuleData, publicKey) {
     
     const capsule = {
       id: capsuleId,
+      blockchainId: null, // Will be set after blockchain logging
       ownerId: userId,
       ownerPublicKey: publicKey || null,
       capsuleType: capsuleData.type, // "medical", "legal", "financial"
@@ -155,6 +156,28 @@ async function getAllCapsules() {
 }
 
 /**
+ * Update capsule with blockchain ID
+ */
+async function updateCapsuleBlockchainId(capsuleId, blockchainId) {
+  try {
+    const capsule = capsules.get(capsuleId);
+    
+    if (!capsule) {
+      throw new Error('Capsule not found');
+    }
+    
+    capsule.blockchainId = blockchainId;
+    capsule.updatedAt = new Date().toISOString();
+    
+    console.log(`🔗 [CAPSULE] Updated blockchain ID for ${capsuleId}: ${blockchainId}`);
+    return capsule;
+  } catch (error) {
+    console.error('❌ [CAPSULE] Error updating blockchain ID:', error);
+    throw error;
+  }
+}
+
+/**
  * Revoke a capsule
  */
 async function revokeCapsule(capsuleId, userId) {
@@ -186,6 +209,7 @@ module.exports = {
   getDecryptedCapsuleContent,
   listUserCapsules,
   getAllCapsules,
+  updateCapsuleBlockchainId,
   revokeCapsule
 };
 

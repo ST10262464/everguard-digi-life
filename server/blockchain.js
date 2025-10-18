@@ -100,19 +100,34 @@ async function storeCapsuleOnBlockchain(capsuleHash, capsuleType) {
     }
     
     const tx = await contractWithSigner.createCapsule(capsuleHash, capsuleType);
-    const receipt = await tx.wait();
+    console.log('📤 [BLOCKCHAIN] Transaction sent:', tx.hash);
+    console.log('⏳ [BLOCKCHAIN] Waiting for confirmation...');
+    
+    // Wait with timeout (60 seconds for better reliability)
+    const receipt = await Promise.race([
+      tx.wait(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Transaction timeout after 60s')), 60000)
+      )
+    ]);
     
     // Parse event to get capsule ID
-    const event = receipt.logs.find(log => {
+    let capsuleId = null;
+    for (const log of receipt.logs) {
       try {
-        const parsed = contract.interface.parseLog(log);
-        return parsed && parsed.name === 'CapsuleCreated';
+        const parsed = contract.interface.parseLog({
+          topics: log.topics,
+          data: log.data
+        });
+        if (parsed && parsed.name === 'CapsuleCreated') {
+          capsuleId = parsed.args.id;
+          break;
+        }
       } catch (e) {
-        return false;
+        // Skip logs we can't parse
+        continue;
       }
-    });
-    
-    const capsuleId = event ? contract.interface.parseLog(event).args.id : null;
+    }
     
     console.log('✅ [BLOCKCHAIN] Capsule stored:', receipt.hash);
     console.log('📋 [BLOCKCHAIN] Capsule ID:', capsuleId ? capsuleId.toString() : 'unknown');
@@ -135,29 +150,81 @@ async function storeCapsuleOnBlockchain(capsuleHash, capsuleType) {
 /**
  * Issue BurstKey on blockchain (log the access event)
  */
-async function issueBurstKeyOnChain(capsuleId, accessorAddress, expiresAt, contextHash) {
+async function issueBurstKeyOnChain(blockchainCapsuleId, accessorAddress, expiresAt, contextHash) {
   try {
     console.log('🔑 [BLOCKCHAIN] Logging BurstKey issuance...');
+    console.log(`   Capsule ID: ${blockchainCapsuleId}, Accessor: ${accessorAddress}`);
     
     if (!contractWithSigner) {
       console.warn('⚠️  [BLOCKCHAIN] No wallet - BurstKey not logged on chain');
       return { success: false, reason: 'No wallet configured' };
     }
     
+    // Ensure capsuleId is a valid number
+    if (blockchainCapsuleId === null || blockchainCapsuleId === undefined) {
+      console.error('❌ [BLOCKCHAIN] Invalid capsule ID - cannot log BurstKey');
+      return { success: false, error: 'Invalid capsule ID' };
+    }
+    
+    // Ensure accessor address is valid or use a placeholder
+    let validAccessorAddress = accessorAddress;
+    if (!accessorAddress || !accessorAddress.startsWith('0x')) {
+      // Generate a deterministic address from the accessor ID
+      validAccessorAddress = wallet.address; // Use deployer address as fallback
+      console.log(`⚠️  [BLOCKCHAIN] Using wallet address as accessor: ${validAccessorAddress}`);
+    } else {
+      // Fix checksum using ethers
+      try {
+        validAccessorAddress = ethers.getAddress(accessorAddress);
+        console.log(`✅ [BLOCKCHAIN] Address checksummed: ${validAccessorAddress}`);
+      } catch (e) {
+        console.error(`❌ [BLOCKCHAIN] Invalid address format, using wallet: ${e.message}`);
+        validAccessorAddress = wallet.address;
+      }
+    }
+    
     const tx = await contractWithSigner.issueBurstKey(
-      capsuleId,
-      accessorAddress,
+      blockchainCapsuleId,
+      validAccessorAddress,
       Math.floor(expiresAt / 1000), // Convert to seconds
       contextHash
     );
-    const receipt = await tx.wait();
+    console.log('📤 [BLOCKCHAIN] BurstKey transaction sent:', tx.hash);
+    console.log('⏳ [BLOCKCHAIN] Waiting for confirmation...');
+    
+    // Wait with timeout (60 seconds for better reliability)
+    const receipt = await Promise.race([
+      tx.wait(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Transaction timeout after 60s')), 60000)
+      )
+    ]);
+    
+    // Parse BurstKey ID from event
+    let burstKeyId = null;
+    for (const log of receipt.logs) {
+      try {
+        const parsed = contract.interface.parseLog({
+          topics: log.topics,
+          data: log.data
+        });
+        if (parsed && parsed.name === 'BurstKeyIssued') {
+          burstKeyId = parsed.args.burstId;
+          break;
+        }
+      } catch (e) {
+        continue;
+      }
+    }
     
     console.log('✅ [BLOCKCHAIN] BurstKey logged:', receipt.hash);
+    console.log('📋 [BLOCKCHAIN] BurstKey ID:', burstKeyId ? burstKeyId.toString() : 'unknown');
     
     return {
       success: true,
       txHash: receipt.hash,
-      blockNumber: receipt.blockNumber
+      blockNumber: receipt.blockNumber,
+      burstKeyId: burstKeyId ? burstKeyId.toString() : null
     };
   } catch (error) {
     console.error('❌ [BLOCKCHAIN] Failed to log BurstKey:', error.message);
@@ -169,17 +236,33 @@ async function issueBurstKeyOnChain(capsuleId, accessorAddress, expiresAt, conte
 /**
  * Consume BurstKey on blockchain (log the consumption)
  */
-async function consumeBurstKeyOnChain(burstId) {
+async function consumeBurstKeyOnChain(blockchainBurstKeyId) {
   try {
     console.log('✅ [BLOCKCHAIN] Logging BurstKey consumption...');
+    console.log(`   BurstKey ID: ${blockchainBurstKeyId}`);
     
     if (!contractWithSigner) {
       console.warn('⚠️  [BLOCKCHAIN] No wallet - consumption not logged');
       return { success: false, reason: 'No wallet configured' };
     }
     
-    const tx = await contractWithSigner.consumeBurstKey(burstId);
-    const receipt = await tx.wait();
+    // Validate numeric ID
+    if (blockchainBurstKeyId === null || blockchainBurstKeyId === undefined) {
+      console.error('❌ [BLOCKCHAIN] Invalid BurstKey ID - cannot log consumption');
+      return { success: false, error: 'Invalid BurstKey ID' };
+    }
+    
+    const tx = await contractWithSigner.consumeBurstKey(blockchainBurstKeyId);
+    console.log('📤 [BLOCKCHAIN] Consumption transaction sent:', tx.hash);
+    console.log('⏳ [BLOCKCHAIN] Waiting for confirmation...');
+    
+    // Wait with timeout (60 seconds for better reliability)
+    const receipt = await Promise.race([
+      tx.wait(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Transaction timeout after 60s')), 60000)
+      )
+    ]);
     
     console.log('✅ [BLOCKCHAIN] Consumption logged:', receipt.hash);
     

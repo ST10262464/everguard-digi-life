@@ -13,10 +13,27 @@ import {
 
 interface EmergencyAccessProps {
   onBack: () => void;
+  capsuleId?: string;
 }
 
-export const EmergencyAccess = ({ onBack }: EmergencyAccessProps) => {
+interface EmergencyData {
+  bloodType: string;
+  allergies: string[];
+  medications: string[];
+  emergencyContact: {
+    name: string;
+    phone: string;
+  };
+  conditions: string[];
+}
+
+const API_URL = "http://localhost:5001";
+
+export const EmergencyAccess = ({ onBack, capsuleId = "cap_1" }: EmergencyAccessProps) => {
   const [timeLeft, setTimeLeft] = useState(900); // 15 minutes in seconds
+  const [emergencyData, setEmergencyData] = useState<EmergencyData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -26,8 +43,85 @@ export const EmergencyAccess = ({ onBack }: EmergencyAccessProps) => {
     return () => clearInterval(timer);
   }, []);
 
+  // Fetch emergency data from API
+  useEffect(() => {
+    const fetchEmergencyData = async () => {
+      try {
+        setLoading(true);
+        // Step 1: Request BurstKey
+        const accessResponse = await fetch(`${API_URL}/api/emergency/request-access`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            capsuleId: capsuleId,
+            medicId: "medic_demo",
+            medicPubKey: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb7",
+            context: {
+              location: "Emergency Room",
+              deviceId: "demo_device",
+              attestation: "emergency"
+            }
+          })
+        });
+
+        if (!accessResponse.ok) throw new Error('Failed to request access');
+        const accessData = await accessResponse.json();
+
+        // Step 2: Use BurstKey to get capsule data
+        const capsuleResponse = await fetch(`${API_URL}/api/emergency/access-capsule`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            burstKey: accessData.burstKey,
+            medicId: "medic_demo"
+          })
+        });
+
+        if (!capsuleResponse.ok) throw new Error('Failed to access capsule');
+        const capsuleData = await capsuleResponse.json();
+
+        setEmergencyData(capsuleData.content);
+      } catch (err) {
+        console.error('Error fetching emergency data:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load emergency data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEmergencyData();
+  }, [capsuleId]);
+
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen p-6 emergency-gradient flex items-center justify-center">
+        <Card className="p-8 bg-white/95 backdrop-blur-sm border-0">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading emergency data...</p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error || !emergencyData) {
+    return (
+      <div className="min-h-screen p-6 emergency-gradient flex items-center justify-center">
+        <Card className="p-8 bg-white/95 backdrop-blur-sm border-0">
+          <div className="text-center">
+            <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
+            <p className="text-lg font-semibold mb-2">Unable to Access Emergency Data</p>
+            <p className="text-muted-foreground mb-4">{error || 'No data available'}</p>
+            <Button onClick={onBack}>Go Back</Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-6 emergency-gradient">
@@ -79,7 +173,7 @@ export const EmergencyAccess = ({ onBack }: EmergencyAccessProps) => {
               </div>
               <div>
                 <div className="text-sm text-muted-foreground mb-1">Blood Type</div>
-                <div className="text-4xl font-bold text-accent">O+</div>
+                <div className="text-4xl font-bold text-accent">{emergencyData.bloodType}</div>
               </div>
             </div>
           </Card>
@@ -91,7 +185,7 @@ export const EmergencyAccess = ({ onBack }: EmergencyAccessProps) => {
               <h4 className="font-heading font-semibold text-lg">Known Allergies</h4>
             </div>
             <div className="space-y-2">
-              {["Penicillin", "Peanuts"].map((allergy, index) => (
+              {emergencyData.allergies.map((allergy, index) => (
                 <div key={index} className="p-3 bg-accent/10 rounded-lg border-2 border-accent/20">
                   <span className="font-semibold text-accent">{allergy}</span>
                 </div>
@@ -103,7 +197,7 @@ export const EmergencyAccess = ({ onBack }: EmergencyAccessProps) => {
           <Card className="p-6 bg-white/95 backdrop-blur-sm border-0">
             <h4 className="font-heading font-semibold text-lg mb-4">Current Medications</h4>
             <div className="space-y-2">
-              {["Lisinopril 10mg - Daily", "Metformin 500mg - Twice daily"].map((med, index) => (
+              {emergencyData.medications.map((med, index) => (
                 <div key={index} className="flex items-center gap-3 p-3 bg-muted rounded-lg">
                   <div className="w-2 h-2 rounded-full bg-primary" />
                   <span className="text-sm">{med}</span>
@@ -117,22 +211,22 @@ export const EmergencyAccess = ({ onBack }: EmergencyAccessProps) => {
             <h4 className="font-heading font-semibold text-lg mb-4">Emergency Contact</h4>
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-semibold text-lg">Jane Doe</p>
-                <p className="text-sm text-muted-foreground">Spouse</p>
+                <p className="font-semibold text-lg">{emergencyData.emergencyContact.name}</p>
+                <p className="text-sm text-muted-foreground">Emergency Contact</p>
               </div>
               <Button className="medical-gradient text-white">
                 <Phone className="w-4 h-4 mr-2" />
                 Call Now
               </Button>
             </div>
-            <p className="text-sm text-muted-foreground mt-2">+1 (555) 123-4567</p>
+            <p className="text-sm text-muted-foreground mt-2">{emergencyData.emergencyContact.phone}</p>
           </Card>
 
           {/* Medical Conditions */}
           <Card className="p-6 bg-white/95 backdrop-blur-sm border-0">
             <h4 className="font-heading font-semibold text-lg mb-4">Medical Conditions</h4>
             <div className="flex flex-wrap gap-2">
-              {["Type 2 Diabetes", "Hypertension"].map((condition, index) => (
+              {emergencyData.conditions.map((condition, index) => (
                 <Badge key={index} variant="secondary" className="px-3 py-1">
                   {condition}
                 </Badge>

@@ -1,13 +1,54 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import { Welcome } from "@/components/Welcome";
+import { Dashboard } from "@/components/Dashboard";
+import { CapsuleDetail } from "@/components/CapsuleDetail";
+import { EmergencyAccess } from "@/components/EmergencyAccess";
+
+type ViewType = "welcome" | "dashboard" | "capsule" | "emergency";
 
 const Index = () => {
+  const [currentView, setCurrentView] = useState<ViewType>("welcome");
+  const [selectedCapsule, setSelectedCapsule] = useState<string>("");
+
+  const handleGetStarted = () => {
+    setCurrentView("dashboard");
+  };
+
+  const handleCapsuleClick = (capsuleType: string) => {
+    if (capsuleType === "emergency") {
+      setCurrentView("emergency");
+    } else {
+      setSelectedCapsule(capsuleType);
+      setCurrentView("capsule");
+    }
+  };
+
+  const handleBack = () => {
+    setCurrentView("dashboard");
+    setSelectedCapsule("");
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <>
+      {currentView === "welcome" && (
+        <Welcome onGetStarted={handleGetStarted} />
+      )}
+      
+      {currentView === "dashboard" && (
+        <Dashboard onCapsuleClick={handleCapsuleClick} />
+      )}
+      
+      {currentView === "capsule" && (
+        <CapsuleDetail 
+          capsuleType={selectedCapsule}
+          onBack={handleBack}
+        />
+      )}
+      
+      {currentView === "emergency" && (
+        <EmergencyAccess onBack={handleBack} />
+      )}
+    </>
   );
 };
 

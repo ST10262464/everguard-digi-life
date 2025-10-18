@@ -13,8 +13,58 @@ import {
   Heart,
   Activity,
   Pill,
-  Siren
+  Siren,
+  Scale,
+  Wallet,
+  GraduationCap,
+  Shield,
+  Heart as HeartLegacy,
+  LucideIcon
 } from "lucide-react";
+
+const capsuleConfig: Record<string, {
+  title: string;
+  icon: LucideIcon;
+  gradient: string;
+  description: string;
+}> = {
+  medical: {
+    title: "Medical Capsule",
+    icon: Heart,
+    gradient: "medical-gradient",
+    description: "Your health and medical information"
+  },
+  legal: {
+    title: "Legal & Will",
+    icon: Scale,
+    gradient: "legal-gradient",
+    description: "Your legal documents and will"
+  },
+  financial: {
+    title: "Financial Capsule",
+    icon: Wallet,
+    gradient: "financial-gradient",
+    description: "Your financial accounts and assets"
+  },
+  education: {
+    title: "Education Capsule",
+    icon: GraduationCap,
+    gradient: "medical-gradient",
+    description: "Your credentials and certifications"
+  },
+  safety: {
+    title: "Safety & GBV",
+    icon: Shield,
+    gradient: "emergency-gradient",
+    description: "Your safety information and resources"
+  },
+  legacy: {
+    title: "Legacy Capsule",
+    icon: HeartLegacy,
+    gradient: "legal-gradient",
+    description: "Your messages and memories for loved ones"
+  }
+};
 
 interface CapsuleDetailProps {
   capsuleType: string;
@@ -23,6 +73,9 @@ interface CapsuleDetailProps {
 
 export const CapsuleDetail = ({ capsuleType, onBack }: CapsuleDetailProps) => {
   const [activeTab, setActiveTab] = useState("overview");
+  
+  const config = capsuleConfig[capsuleType] || capsuleConfig.medical;
+  const Icon = config.icon;
 
   // Mock data for medical capsule
   const medicalData = {
@@ -66,15 +119,15 @@ export const CapsuleDetail = ({ capsuleType, onBack }: CapsuleDetailProps) => {
           
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <div className="medical-gradient p-3 rounded-2xl text-white">
-                <Heart className="w-6 h-6" />
+              <div className={`${config.gradient} p-3 rounded-2xl text-white`}>
+                <Icon className="w-6 h-6" />
               </div>
-              <h1 className="font-heading font-bold text-3xl">Medical Capsule</h1>
+              <h1 className="font-heading font-bold text-3xl">{config.title}</h1>
             </div>
-            <p className="text-muted-foreground">Your health and medical information</p>
+            <p className="text-muted-foreground">{config.description}</p>
           </div>
 
-          <Button className="medical-gradient text-white hover:opacity-90 transition-smooth">
+          <Button className={`${config.gradient} text-white hover:opacity-90 transition-smooth`}>
             <Share2 className="w-4 h-4 mr-2" />
             Grant Access
           </Button>

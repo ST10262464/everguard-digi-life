@@ -1,0 +1,64 @@
+{
+  "nav": {
+    "home": "Ikhaya",
+    "requests": "Izicelo",
+    "finance": "Ezemali",
+    "gbvSupport": "Ukusekela kwe-GBV",
+    "sanitaryAid": "Usizo Lokuhlanzeka",
+    "aiAssistant": "Umsizi we-AI",
+    "about": "Ngathi"
+  },
+  "home": {
+    "title": "EmpowerHub",
+    "subtitle": "Ukuqinisa Abesifazane Ngosekelo Oluhlanganisiwe",
+    "tagline": "Ukuqinisa ukuzimela, ukuphepha, nesithunzi.",
+    "features": {
+      "financialSupport": {
+        "title": "Ukusekela Kwezimali",
+        "description": "Thola izeluleko zokutshala imali ezilungiselelwe wena futhi uye ezingqungqutheleni zezimali eziqinisayo."
+      },
+      "gbvSupport": {
+        "title": "Ukusekela kwe-GBV",
+        "description": "Thola usekelo olusheshayo nezindawo zokuphephela ezivikelekile lapho uzidinga kakhulu."
+      },
+      "sanitaryAid": {
+        "title": "Usizo Lokuhlanzeka",
+        "description": "Thola amabhokisi okunikela aseduze futhi ufinyelele izinsiza zokuhlanzeka ezibalulekile."
+      },
+      "aiAssistant": {
+        "title": "Umsizi we-AI",
+        "description": "Thola izimpendulo ezisheshayo nokuqondiswa kusistimu yethu yosekelo ehlakaniphile."
+      },
+      "submitRequests": {
+        "title": "Thumela Izicelo",
+        "description": "Thumela futhi ulandelele izicelo zakho zosekelo ngesistimu yethu elula ukuyisebenzisa."
+      },
+      "aboutUs": {
+        "title": "Ngathi",
+        "description": "Funda kabanzi ngomgomo wethu wokuqinisa abesifazane kulo lonke iNingizimu Afrika."
+      }
+    },
+    "cta": {
+      "title": "Usukulungele Ukuqala?",
+      "description": "Joyina izinkulungwane zabesifazane abathole usekelo nokuqiniswa ngenkundla yethu.",
+      "button": "Thumela Isicelo Sakho Sokuqala"
+    },
+    "learnMore": "Funda Kabanzi"
+  },
+  "language": {
+    "selector": "Ulimi",
+    "languages": {
+      "en": "IsiNgisi",
+      "af": "IsiBhunu",
+      "zu": "isiZulu",
+      "xh": "isiXhosa",
+      "st": "Sesotho",
+      "tn": "Setswana",
+      "ss": "siSwati",
+      "ve": "Tshivenḓa",
+      "ts": "Xitsonga",
+      "nr": "isiNdebele",
+      "nso": "Sepedi"
+    }
+  }
+}

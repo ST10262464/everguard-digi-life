@@ -1,0 +1,459 @@
+{
+  "nav": {
+    "home": "Home",
+    "requests": "Requests",
+    "finance": "Finance",
+    "gbvSupport": "GBV Support",
+    "sanitaryAid": "Sanitary Aid",
+    "aiAssistant": "AI Assistant",
+    "about": "About"
+  },
+  "home": {
+    "title": "GirliesHub",
+    "subtitle": "Empowering Women with Integrated Support",
+    "tagline": "Challenges into change",
+    "features": {
+      "financialSupport": {
+        "title": "Financial Support",
+        "description": "Access tailored investment advice and attend empowering financial seminars."
+      },
+      "gbvSupport": {
+        "title": "GBV Support",
+        "description": "Find immediate support and safe shelter locations when you need them most."
+      },
+      "sanitaryAid": {
+        "title": "Sanitary Aid",
+        "description": "Locate nearby donation bins and access essential hygiene resources."
+      },
+      "aiAssistant": {
+        "title": "AI Assistant",
+        "description": "Get instant answers and guidance from our intelligent support system."
+      },
+      "submitRequests": {
+        "title": "Submit Requests",
+        "description": "Submit and track your support requests with our easy-to-use system."
+      },
+      "aboutUs": {
+        "title": "About Us",
+        "description": "Learn more about our mission to empower women across South Africa."
+      }
+    },
+    "cta": {
+      "title": "Ready to Get Started?",
+      "description": "Join thousands of women who have found support and empowerment through our platform.",
+      "button": "Submit Your First Request"
+    },
+    "learnMore": "Learn More"
+  },
+  "requests": {
+    "title": "Support Requests",
+    "subtitle": "Submit new requests and track your existing ones",
+    "loading": "Loading requests...",
+    "noRequests": "No requests yet",
+    "noRequestsDesc": "Start by submitting your first support request",
+    "submitRequest": "Submit Request",
+    "type": "Type",
+    "name": "Name",
+    "location": "Location",
+    "submitted": "Submitted",
+    "status": {
+      "completed": "Completed",
+      "processing": "Processing",
+      "urgent": "Urgent"
+    },
+    "spotsAvailable": "spots available",
+    "types": {
+      "finance": "Finance",
+      "gbvSupport": "GBV Support",
+      "sanitaryAid": "Sanitary Aid"
+    },
+    "mockData": {
+      "req001": {
+        "description": "Looking for investment advice for small business startup",
+        "location": "Cape Town, Western Cape"
+      },
+      "req002": {
+        "name": "Anonymous",
+        "description": "Need immediate safe shelter information",
+        "location": "Johannesburg, Gauteng"
+      },
+      "req003": {
+        "description": "Looking for nearby donation bins for hygiene products",
+        "location": "Durban, KwaZulu-Natal"
+      }
+    }
+  },
+  "finance": {
+    "title": "Financial Empowerment",
+    "subtitle": "Access tailored financial advice, attend empowering seminars, and build your path to financial independence",
+    "upcomingSeminars": "Upcoming Seminars",
+    "financialTips": "Financial Tips",
+    "quickStats": "Quick Stats",
+    "womenEmpowered": "Women Empowered",
+    "seminarsCompleted": "Seminars Conducted",
+    "successRate": "Success Rate",
+    "spotsAvailable": "spots available",
+    "seminars": {
+      "seminar1": {
+        "title": "Women in Business: Starting Your First Investment",
+        "time": "10:00 AM",
+        "location": "Cape Town Community Center",
+        "facilitator": "Dr. Nomsa Mbeki",
+        "description": "Learn the basics of investment and how to start building wealth for your future."
+      },
+      "seminar2": {
+        "title": "Financial Independence Workshop",
+        "time": "2:00 PM",
+        "location": "Johannesburg Business Hub",
+        "facilitator": "Sarah Williams, CFA",
+        "description": "Practical strategies for achieving financial independence as a woman entrepreneur."
+      },
+      "seminar3": {
+        "title": "Budgeting and Saving for Single Mothers",
+        "time": "6:00 PM",
+        "location": "Durban Women's Center",
+        "facilitator": "Thandiwe Nkomo",
+        "description": "Essential budgeting skills and saving strategies tailored for single mothers."
+      }
+    },
+    "tips": {
+      "emergencyFund": {
+        "title": "Build an Emergency Fund",
+        "description": "Start with saving 3-6 months of expenses for unexpected situations."
+      },
+      "education": {
+        "title": "Invest in Financial Education",
+        "description": "Knowledge is power. Learn about budgeting, investing, and financial planning."
+      },
+      "diversifyIncome": {
+        "title": "Diversify Your Income",
+        "description": "Create multiple income streams to increase financial stability."
+      },
+      "retirement": {
+        "title": "Plan for Retirement Early",
+        "description": "The earlier you start, the more time your money has to grow."
+      },
+      "trackExpenses": {
+        "title": "Track Your Expenses",
+        "description": "Understanding where your money goes is the first step to financial control."
+      }
+    },
+    "categories": {
+      "savings": "Savings",
+      "education": "Education",
+      "income": "Income",
+      "planning": "Planning",
+      "budgeting": "Budgeting"
+    }
+  },
+  "about": {
+    "title": "About GirliesHub",
+    "subtitle": "GirliesHub empowers women in South Africa by offering tailored investment advice and seminars, immediate GBV support with safe shelter locations, and access to sanitary donation bins. This integrated solution demonstrates our commitment to strengthening independence, safety, and dignity.",
+    "mission": "Our Mission",
+    "missionText": "To create an integrated platform that empowers women across South Africa by providing comprehensive support services that address financial independence, personal safety, and basic hygiene needs in one accessible solution.",
+    "coreServices": "Our Core Services",
+    "impact": "Our Impact",
+    "values": "Our Values",
+    "technologyInnovation": "Technology & Innovation",
+    "currentFeatures": "Current Features",
+    "futureDevelopment": "Future Development",
+    "features": {
+      "financialEmpowerment": {
+        "title": "Financial Empowerment",
+        "description": "Tailored investment advice, financial seminars, and resources to build economic independence."
+      },
+      "gbvSupport": {
+        "title": "GBV Support",
+        "description": "Immediate support and safe shelter locations for women experiencing gender-based violence."
+      },
+      "sanitaryAid": {
+        "title": "Sanitary Aid",
+        "description": "Access to essential hygiene products through strategically located donation bins."
+      }
+    },
+    "stats": {
+      "womenEmpowered": "Women Empowered",
+      "seminarsCompleted": "Seminars Conducted",
+      "shelterLocations": "Shelter Locations",
+      "donationBins": "Donation Bins"
+    },
+    "valuesList": {
+      "empowerment": {
+        "title": "Empowerment",
+        "description": "We believe in strengthening women's independence through education, resources, and support."
+      },
+      "safety": {
+        "title": "Safety",
+        "description": "Ensuring immediate access to safe spaces and support for women in crisis situations."
+      },
+      "dignity": {
+        "title": "Dignity",
+        "description": "Providing essential resources while maintaining the dignity and privacy of every woman."
+      },
+      "community": {
+        "title": "Community",
+        "description": "Building a strong network of support through community-driven initiatives and partnerships."
+      }
+    },
+    "techDescription": "GirliesHub leverages modern technology to provide an integrated support platform. Our current demo showcases the user interface and core functionality, with plans to integrate advanced features including:",
+    "currentFeaturesList": {
+      "responsiveInterface": "Responsive web interface",
+      "requestSystem": "Request submission system",
+      "resourceMapping": "Resource location mapping",
+      "aiInterface": "AI assistant interface"
+    },
+    "futureFeaturesList": {
+      "aiSupport": "AI-powered support & recommendations",
+      "blockchain": "Blockchain integration with BlockDAG",
+      "database": "Database persistence & analytics",
+      "metamask": "MetaMask integration for secure transactions"
+    },
+    "demoNote": "This demo showcases the integrated solution concept, designed to allow independent development of features while maintaining a cohesive user experience. The modular architecture enables future enhancements without disrupting core functionality."
+  },
+  "aiAssistant": {
+    "title": "AI Assistant",
+    "subtitle": "Get instant answers and guidance from our intelligent support system",
+    "welcomeMessage": "Hello! I'm your GirliesHub assistant. I'm here to help you with questions about financial advice, GBV support, sanitary aid, and any other support services. How can I assist you today?",
+    "quickQuestions": {
+      "title": "Quick Questions:",
+      "questions": {
+        "financialSeminars": "How do I find financial seminars?",
+        "safeShelters": "Where can I find safe shelters?",
+        "sanitaryProducts": "How do I access sanitary products?",
+        "submitRequest": "How do I submit a support request?",
+        "availableServices": "What services are available?"
+      }
+    },
+    "chat": {
+      "assistantName": "GirliesHub Assistant",
+      "status": "Online • Ready to help",
+      "placeholder": "Type your message here...",
+      "sendButton": "Send",
+      "clearChat": "Clear Chat",
+      "typing": "Typing...",
+      "keyboardHint": "Press Enter to send, Shift+Enter for new line"
+    },
+    "footer": "For urgent matters, please contact our emergency hotlines directly",
+    "mockResponses": {
+      "response1": "I understand you're looking for help. Let me provide you with some guidance on that topic.",
+      "response2": "That's a great question! Based on your inquiry, I'd recommend checking out our specific support pages for detailed information.",
+      "response3": "I'm here to help! For immediate assistance with urgent matters, please don't hesitate to contact our emergency hotlines.",
+      "response4": "Thank you for reaching out. I can help connect you with the right resources and support services.",
+      "response5": "That's an important question. Our platform offers comprehensive support across financial, safety, and health services."
+    }
+  },
+  "sanitaryAid": {
+    "title": "Sanitary Aid & Hygiene Support",
+    "subtitle": "Access free sanitary products and hygiene essentials from our donation bins across South Africa",
+    "donationBins": {
+      "title": "Donation Bin Locations",
+      "address": "Address:",
+      "hours": "Hours:",
+      "contact": "Contact:",
+      "availableItems": "Available Items:",
+      "lastRestocked": "Last Restocked:",
+      "daysAgo": "days ago",
+      "callLocation": "Call Location",
+      "getDirections": "Get Directions",
+      "locations": {
+        "capeTown": {
+          "name": "Cape Town Central Library",
+          "address": "60 Strand Street, Cape Town City Centre, Western Cape",
+          "phone": "+27 21 400 3500",
+          "hours": "Mon-Fri: 8:00 AM - 6:00 PM, Sat: 9:00 AM - 4:00 PM",
+          "description": "Located at the main entrance. Free access to essential hygiene products for women in need.",
+          "contact": "Sarah Mthembu"
+        },
+        "johannesburg": {
+          "name": "Johannesburg Women's Health Clinic",
+          "address": "123 Commissioner Street, Johannesburg Central, Gauteng",
+          "phone": "+27 11 358 0000",
+          "hours": "Mon-Fri: 7:00 AM - 7:00 PM, Weekends: 8:00 AM - 2:00 PM",
+          "description": "Free hygiene products available at reception. No questions asked policy.",
+          "contact": "Dr. Nalini Patel"
+        },
+        "durban": {
+          "name": "Durban Community Center",
+          "address": "45 Dr Pixley KaSeme Street, Durban Central, KwaZulu-Natal",
+          "phone": "+27 31 311 1111",
+          "hours": "Mon-Sat: 8:00 AM - 5:00 PM, Sun: Closed",
+          "description": "Community-supported donation bin. Help yourself to what you need.",
+          "contact": "Nomthandazo Dlamini"
+        }
+      },
+      "items": {
+        "sanitaryPads": "Sanitary Pads",
+        "tampons": "Tampons",
+        "menstrualCups": "Menstrual Cups",
+        "soap": "Soap",
+        "underwear": "Underwear",
+        "toiletPaper": "Toilet Paper",
+        "shampoo": "Shampoo",
+        "toothbrush": "Toothbrush",
+        "toothpaste": "Toothpaste"
+      },
+      "status": {
+        "wellStocked": "Well Stocked",
+        "lowStock": "Low Stock",
+        "outOfStock": "Out of Stock"
+      }
+    },
+    "hygieneTips": {
+      "title": "Hygiene Tips",
+      "menstrualHygiene": {
+        "title": "Menstrual Hygiene",
+        "tips": {
+          "tip1": "Change sanitary products every 4-6 hours",
+          "tip2": "Wash hands before and after changing products",
+          "tip3": "Use only one method at a time (pad OR tampon)",
+          "tip4": "Keep track of your cycle for better planning"
+        }
+      },
+      "generalHygiene": {
+        "title": "General Hygiene",
+        "tips": {
+          "tip1": "Wash intimate areas with warm water and mild soap",
+          "tip2": "Always wipe from front to back",
+          "tip3": "Wear clean, cotton underwear",
+          "tip4": "Change underwear daily"
+        }
+      },
+      "emergencyAlternatives": {
+        "title": "Emergency Alternatives",
+        "tips": {
+          "tip1": "Clean cloth can be used temporarily",
+          "tip2": "Toilet paper folded multiple times",
+          "tip3": "Always prioritize cleanliness",
+          "tip4": "Seek proper products as soon as possible"
+        }
+      }
+    },
+    "donation": {
+      "title": "Want to Donate?",
+      "description": "Help keep our donation bins stocked with essential hygiene products.",
+      "items": {
+        "sanitaryProducts": "Sanitary pads & tampons",
+        "hygieneItems": "Soap & personal hygiene items",
+        "underwear": "New underwear (all sizes)"
+      },
+      "learnMore": "Learn More About Donating"
+    }
+  },
+  "gbvSupport": {
+    "title": "GBV Support & Safe Shelters",
+    "subtitle": "Immediate support and safe shelter locations for women experiencing gender-based violence",
+    "emergencyAlert": {
+      "title": "In Immediate Danger?",
+      "description": "Call 0800 428 428 (GBV Command Centre) or 10111 (Police) immediately. These services are available 24/7 and completely free."
+    },
+    "safeShelters": {
+      "title": "Safe Shelter Locations",
+      "address": "Address:",
+      "hours": "Hours:",
+      "contactNumbers": "Contact Numbers:",
+      "general": "General:",
+      "emergency": "Emergency:",
+      "servicesAvailable": "Services Available:",
+      "emergencyCall": "Emergency Call",
+      "generalContact": "General Contact",
+      "capacity": {
+        "available": "Available",
+        "limited": "Limited",
+        "full": "Full"
+      },
+      "locations": {
+        "safeHaven": {
+          "name": "Safe Haven Women's Shelter",
+          "address": "123 Hope Street, Cape Town, Western Cape",
+          "phone": "+27 21 123 4567",
+          "emergency": "+27 21 123 4568",
+          "hours": "24/7 Emergency Access",
+          "description": "A secure facility providing comprehensive support for women and children escaping domestic violence."
+        },
+        "ubuntu": {
+          "name": "Ubuntu Women's Sanctuary",
+          "address": "456 Freedom Avenue, Johannesburg, Gauteng",
+          "phone": "+27 11 987 6543",
+          "emergency": "+27 11 987 6544",
+          "hours": "24/7 Emergency Access",
+          "description": "Providing a safe environment with holistic support services for survivors of gender-based violence."
+        },
+        "themba": {
+          "name": "Themba House",
+          "address": "789 Courage Road, Durban, KwaZulu-Natal",
+          "phone": "+27 31 555 7890",
+          "emergency": "+27 31 555 7891",
+          "hours": "24/7 Emergency Access",
+          "description": "A community-based shelter offering immediate safety and long-term empowerment programs."
+        }
+      },
+      "services": {
+        "emergencyAccommodation": "Emergency Accommodation",
+        "counseling": "Counseling",
+        "legalSupport": "Legal Support",
+        "jobTraining": "Job Training",
+        "safeHousing": "Safe Housing",
+        "traumaCounseling": "Trauma Counseling",
+        "legalAid": "Legal Aid",
+        "childrenSupport": "Children Support",
+        "emergencyShelter": "Emergency Shelter",
+        "medicalSupport": "Medical Support",
+        "courtSupport": "Court Support",
+        "skillsDevelopment": "Skills Development"
+      }
+    },
+    "emergencyContacts": {
+      "title": "Emergency Contacts",
+      "callNow": "Call Now",
+      "contacts": {
+        "gbvCommand": {
+          "name": "National GBV Command Centre",
+          "number": "0800 428 428",
+          "description": "24/7 toll-free helpline for immediate assistance"
+        },
+        "police": {
+          "name": "South African Police Service",
+          "number": "10111",
+          "description": "Emergency police response"
+        },
+        "lifeline": {
+          "name": "LifeLine National",
+          "number": "0861 322 322",
+          "description": "24/7 counseling and crisis support"
+        },
+        "childline": {
+          "name": "Childline South Africa",
+          "number": "116",
+          "description": "Support for children in crisis"
+        }
+      }
+    },
+    "legalResources": {
+      "title": "Legal Resources",
+      "legalAid": {
+        "name": "Legal Aid South Africa",
+        "description": "Free legal assistance: 0800 110 110"
+      },
+      "medicalSupport": {
+        "name": "Medical Support",
+        "description": "Available at all shelter locations"
+      }
+    }
+  },
+  "language": {
+    "selector": "Language",
+    "languages": {
+      "en": "English",
+      "af": "Afrikaans",
+      "zu": "isiZulu",
+      "xh": "isiXhosa",
+      "st": "Sesotho",
+      "tn": "Setswana",
+      "ss": "siSwati",
+      "ve": "Tshivenḓa",
+      "ts": "Xitsonga",
+      "nr": "isiNdebele",
+      "nso": "Sepedi"
+    }
+  }
+}

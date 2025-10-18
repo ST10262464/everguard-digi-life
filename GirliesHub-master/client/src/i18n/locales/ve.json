@@ -1,0 +1,64 @@
+{
+  "nav": {
+    "home": "Hayani",
+    "requests": "Mikumbelo",
+    "finance": "Zwa Mali",
+    "gbvSupport": "Thikhedzo ya GBV",
+    "sanitaryAid": "Thuso ya Vhuhwavho",
+    "aiAssistant": "Muthusi wa AI",
+    "about": "Nga Hanga"
+  },
+  "home": {
+    "title": "EmpowerHub",
+    "subtitle": "U Khwathisedza Vhafumakadzi nga Thikhedzo yo Kanganyiswaho",
+    "tagline": "U khwathisedza vhudifhinduleli, tsireledzo na lufuno.",
+    "features": {
+      "financialSupport": {
+        "title": "Thikhedzo ya Mali",
+        "description": "Wanani themendelo dza u bvisa mali dzo lugaganyiswaho na u dzhenelela kha miangaredzo ya mali yo khwathisedziaho."
+      },
+      "gbvSupport": {
+        "title": "Thikhedzo ya GBV",
+        "description": "Wanani thikhedzo ya u tavhanya na fhethu dza u tshilela dzo sireledzaho musi ni tshi khou di toda nga maanda."
+      },
+      "sanitaryAid": {
+        "title": "Thuso ya Vhuhwavho",
+        "description": "Wanani mabokisi a mpho o fhufhelaho na u swika kha zwithu zwa vhuhwavho zwo tou konou."
+      },
+      "aiAssistant": {
+        "title": "Muthusi wa AI",
+        "description": "Wanani mafhungo a u tavhanya na themendelo u bva kha sisiteme yanga ya thikhedzo yo rengaho."
+      },
+      "submitRequests": {
+        "title": "Rumelani Mikumbelo",
+        "description": "Rumelani na u tevhedzela mikumbelo yanu ya thikhedzo nga sisiteme yanga yo lalaho u shumisa."
+      },
+      "aboutUs": {
+        "title": "Nga Hanga",
+        "description": "Gududzani nga ha ndivho yanga ya u khwathisedza vhafumakadzi kha Afrika Tshipembe yothe."
+      }
+    },
+    "cta": {
+      "title": "No Lugela u Thoma?",
+      "description": "Dzhenelelani na zwigidigidi zwa vhafumakadzi vhe vha wana thikhedzo na u khwathisedzwa nga bulatifomu yanga.",
+      "button": "Rumelani Kumbelo yanu ya u Thoma"
+    },
+    "learnMore": "Gududzani Zwinzhi"
+  },
+  "language": {
+    "selector": "Luambo",
+    "languages": {
+      "en": "Tshiisimane",
+      "af": "Tshiafrikanse",
+      "zu": "isiZulu",
+      "xh": "isiXhosa",
+      "st": "Sesotho",
+      "tn": "Setswana",
+      "ss": "siSwati",
+      "ve": "Tshivenḓa",
+      "ts": "Xitsonga",
+      "nr": "isiNdebele",
+      "nso": "Sepedi"
+    }
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "nav": {
+    "home": "Kaya",
+    "requests": "Swikombelo",
+    "finance": "Timali",
+    "gbvSupport": "Nseketelo wa GBV",
+    "sanitaryAid": "Mpfuno wa Ku Basisa",
+    "aiAssistant": "Mupfuni wa AI",
+    "about": "Hi Hina"
+  },
+  "home": {
+    "title": "EmpowerHub",
+    "subtitle": "Ku Tiyisisa Vanwanati hi Nseketelo wo Hlanganisiwa",
+    "tagline": "Ku tiyisisa ku tiyimela, vuhlayiseki na xikwembu.",
+    "features": {
+      "financialSupport": {
+        "title": "Nseketelo wa Timali",
+        "description": "Kuma switsundzuxo swa ku tshama mali leswi lulamiseriweke eka wena naswona u nghena eka minhlangano ya timali leyi tiyisisaka."
+      },
+      "gbvSupport": {
+        "title": "Nseketelo wa GBV",
+        "description": "Kuma nseketelo wo hatlisa na tindhawu to hlayiseka to sirheleka loko u ti lava swinene."
+      },
+      "sanitaryAid": {
+        "title": "Mpfuno wa Ku Basisa",
+        "description": "Kuma mabokisi ya swiphiwo ya le kufupi naswona u fikelela switirhisiwa swa ku basisa leswi lavekaka."
+      },
+      "aiAssistant": {
+        "title": "Mupfuni wa AI",
+        "description": "Kuma tinhlamulo to hatlisa na nhlamuselo ku suka eka sisiteme ya hina ya nseketelo leyi rhandzaka."
+      },
+      "submitRequests": {
+        "title": "Rhumela Swikombelo",
+        "description": "Rhumela naswona u landzelela swikombelo swa wena swa nseketelo hi sisiteme ya hina leyi olova ku yi tirhisa."
+      },
+      "aboutUs": {
+        "title": "Hi Hina",
+        "description": "Dyondza swo tala hi xikongomelo xa hina xo tiyisisa vanwanati eka Afrika Dzonga hinkwayo."
+      }
+    },
+    "cta": {
+      "title": "U Lulamerile ku Sungula?",
+      "description": "Joyina tinkume ta vanwanati lava kumeke nseketelo na ku tiyisisiwa hi pulatifomo ya hina.",
+      "button": "Rhumela Xikombelo xa Wena xo Sungula"
+    },
+    "learnMore": "Dyondza Swo Tala"
+  },
+  "language": {
+    "selector": "Ririmi",
+    "languages": {
+      "en": "Xinghezi",
+      "af": "Xiafrikanse",
+      "zu": "isiZulu",
+      "xh": "isiXhosa",
+      "st": "Sesotho",
+      "tn": "Setswana",
+      "ss": "siSwati",
+      "ve": "Tshivenḓa",
+      "ts": "Xitsonga",
+      "nr": "isiNdebele",
+      "nso": "Sepedi"
+    }
+  }
+}

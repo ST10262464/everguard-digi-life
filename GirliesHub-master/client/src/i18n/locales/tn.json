@@ -1,0 +1,64 @@
+{
+  "nav": {
+    "home": "Gae",
+    "requests": "Dikopo",
+    "finance": "Madi",
+    "gbvSupport": "Thuso ya GBV",
+    "sanitaryAid": "Thuso ya Phitlhelo",
+    "aiAssistant": "Mothusi wa AI",
+    "about": "Ka Rona"
+  },
+  "home": {
+    "title": "EmpowerHub",
+    "subtitle": "Go Nonotsha Basadi ka Thuso e e Kopaneng",
+    "tagline": "Go nonotsha boikemelo, pabalesego le seriti.",
+    "features": {
+      "financialSupport": {
+        "title": "Thuso ya Madi",
+        "description": "Bona dikeletso tsa peeletso tse di rulagantsweng mo go wena mme o tsene mo dipuisanong tsa madi tse di nonotshang."
+      },
+      "gbvSupport": {
+        "title": "Thuso ya GBV",
+        "description": "Bona thuso e e bonako le mafelo a a babalesegileng a bodulo fa o a tlhoka thata."
+      },
+      "sanitaryAid": {
+        "title": "Thuso ya Phitlhelo",
+        "description": "Bona mabokoso a dineelo a a gaufi le go fitlhelela didiriswa tsa phitlhelo tse di botlhokwa."
+      },
+      "aiAssistant": {
+        "title": "Mothusi wa AI",
+        "description": "Bona dikarabo tse di bonako le kaelo go tswa mo tsamaisong ya rona ya thuso e e botlhale."
+      },
+      "submitRequests": {
+        "title": "Romela Dikopo",
+        "description": "Romela mme o latele dikopo tsa gago tsa thuso ka tsamaiso ya rona e e motlhofo go e dirisa."
+      },
+      "aboutUs": {
+        "title": "Ka Rona",
+        "description": "Ithute go le gontsi ka maikaelelo a rona a go nonotsha basadi mo Aforikaborwa yotlhe."
+      }
+    },
+    "cta": {
+      "title": "A o Siametse go Simolola?",
+      "description": "Nna le dikete tsa basadi ba ba boneng thuso le nonotshego mo sethokgweng sa rona.",
+      "button": "Romela Kopo ya Gago ya Ntlha"
+    },
+    "learnMore": "Ithute go le Gontsi"
+  },
+  "language": {
+    "selector": "Puo",
+    "languages": {
+      "en": "Sekgowa",
+      "af": "Seafrikanse",
+      "zu": "isiZulu",
+      "xh": "isiXhosa",
+      "st": "Sesotho",
+      "tn": "Setswana",
+      "ss": "siSwati",
+      "ve": "Tshivenḓa",
+      "ts": "Xitsonga",
+      "nr": "isiNdebele",
+      "nso": "Sepedi"
+    }
+  }
+}

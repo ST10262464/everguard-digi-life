@@ -1,0 +1,348 @@
+{
+  "nav": {
+    "home": "Ikhaya",
+    "requests": "Izicelo",
+    "finance": "Ezezimali",
+    "gbvSupport": "Ukusekela kwe-GBV",
+    "sanitaryAid": "Usizo Lokuhlanzeka",
+    "aiAssistant": "Umsizi we-AI",
+    "about": "Ngathi"
+  },
+  "home": {
+    "title": "EmpowerHub",
+    "subtitle": "Ukuqinisa Abesifazane Ngosekelo Oluhlanganisiwe",
+    "tagline": "Ukuqinisa ukuzimela, ukuphepha, nesithunzi.",
+    "features": {
+      "financialSupport": {
+        "title": "Ukusekela Kwezimali",
+        "description": "Thola izeluleko zokutshala imali ezilungiselelwe wena futhi uye ezingqungqutheleni zezimali eziqinisayo.",
+        "successRate": "Isilinganiso Sempumelelo",
+        "spotsAvailable": "izikhala ezitholakalayo",
+        "seminars": {
+          "seminar1": {
+            "title": "Abesifazane Ebhizinisini: Ukuqala Ukutshala Imali Kwakho Kokuqala",
+            "time": "10:00 Ekuseni",
+            "location": "Isikhungo Somphakathi saseKapa",
+            "facilitator": "Dr. Nomsa Mbeki",
+            "description": "Funda izisekelo zokutshala imali nokuthi ungaqala kanjani ukwakha inotho yekusasa lakho."
+          },
+          "seminar2": {
+            "title": "Iworkshop Yokuzimela Ngezimali",
+            "time": "14:00 Ntambama",
+            "location": "Isikhungo Sebhizinisi saseGoli",
+            "facilitator": "Sarah Williams, CFA",
+            "description": "Amasu asebenzayo okufeza ukuzimela ngezimali njengomuntu wesifazane osebenza ngokuzimela."
+          },
+          "seminar3": {
+            "title": "Isabelomali Nokonga Komama Abazimele",
+            "time": "18:00 Ntambama",
+            "location": "Isikhungo Sabesifazane saseDurban",
+            "facilitator": "Thandiwe Nkomo",
+            "description": "Amakhono abalulekile esabelomali namasu okonga alungiselelwe omama abazimele."
+          }
+        },
+        "tips": {
+          "emergencyFund": {
+            "title": "Yakha Isikhwama Sesimo Esiphuthumayo",
+            "description": "Qala ngokonga izindleko zezinyanga ezi-3-6 ezimweni ezingalindelekile."
+          },
+          "education": {
+            "title": "Tshala Imali Emfundweni Yezimali",
+            "description": "Ulwazi lunamandla. Funda ngezabelomali, ukutshala imali, nohlelo lwezimali."
+          },
+          "diversifyIncome": {
+            "title": "Hlukanisa Imali Engenayo Yakho",
+            "description": "Dala imithombo eminingi yemali engenayo ukuze wandise ukuzinza kwezimali."
+          },
+          "retirement": {
+            "title": "Hlela Ukuthatha Umhlalaphansi Kusenesikhathi",
+            "description": "Uma uqala kusenesikhathi, imali yakho inesikhathi esingaphezulu sokukhula."
+          },
+          "trackExpenses": {
+            "title": "Landelela Izindleko Zakho",
+            "description": "Ukuqonda ukuthi imali yakho iya kuphi kuyisinyathelo sokuqala ekulawuleni izimali."
+          }
+        },
+        "categories": {
+          "savings": "Ukonga",
+          "education": "Imfundo",
+          "income": "Imali Engenayo",
+          "planning": "Uhlelo",
+          "budgeting": "Isabelomali"
+        }
+      },
+      "gbvSupport": {
+        "title": "Ukusekela kwe-GBV",
+        "description": "Thola usekelo olusheshayo nezindawo zokuphephela ezivikelekile lapho uzidinga kakhulu."
+      },
+      "sanitaryAid": {
+        "title": "Usizo Lokuhlanzeka",
+        "description": "Thola amabhokisi okunikela aseduze futhi ufinyelele izinsiza zokuhlanzeka ezibalulekile."
+      },
+      "aiAssistant": {
+        "title": "Umsizi we-AI",
+        "description": "Thola izimpendulo ezisheshayo nokuqondiswa kusistimu yethu yosekelo ehlakaniphile."
+      },
+      "submitRequests": {
+        "title": "Thumela Izicelo",
+        "description": "Thumela futhi ulandelele izicelo zakho zosekelo ngesistimu yethu elula ukuyisebenzisa."
+      },
+      "aboutUs": {
+        "title": "Ngathi",
+        "description": "Funda kabanzi ngomgomo wethu wokuqinisa abesifazane kulo lonke iNingizimu Afrika."
+      }
+    },
+    "cta": {
+      "title": "Usukulungele Ukuqala?",
+      "description": "Joyina izinkulungwane zabesifazane abathole usekelo nokuqiniswa ngenkundla yethu.",
+      "button": "Thumela Isicelo Sakho Sokuqala"
+    },
+    "learnMore": "Funda Kabanzi"
+  },
+  "aiAssistant": {
+    "title": "Umsizi we-AI",
+    "subtitle": "Thola izimpendulo ezisheshayo nokuqondiswa kusistimu yethu ehlakaniphile yokusekela",
+    "welcomeMessage": "Sawubona! Ngingumsizi wakho we-EmpowerHub. Ngilapha ukukukusiza ngemibuzo mayelana nezeluleko zezimali, ukusekela kwe-GBV, usizo lwezempilo, nanoma yiziphi ezinye izinsizakalo zokusekela. Ngingakusiza kanjani namuhla?",
+    "quickQuestions": {
+      "title": "Imibuzo Esheshayo:",
+      "questions": {
+        "financialSeminars": "Ngingawathola kanjani amaseminari ezimali?",
+        "safeShelters": "Ngingawathola kuphi amakhaya aphephile?",
+        "sanitaryProducts": "Ngingawathola kanjani amikhiqizo ezempilo?",
+        "submitRequest": "Ngingathumela kanjani isicelo sokusekela?",
+        "availableServices": "Yiziphi izinsizakalo ezikhona?"
+      }
+    },
+    "chat": {
+      "assistantName": "Umsizi we-EmpowerHub",
+      "status": "Ku-inthanethi • Kulungele ukusiza",
+      "placeholder": "Bhala umlayezo wakho lapha...",
+      "sendButton": "Thumela",
+      "clearChat": "Sula Ingxoxo",
+      "typing": "Uyabhala...",
+      "keyboardHint": "Cindezela u-Enter ukuthumela, u-Shift+Enter kumugqa omusha"
+    },
+    "footer": "Ezindabeni eziphuthumayo, sicela ushayele imigqa yethu yezimo eziphuthumayo ngqo",
+    "mockResponses": {
+      "response1": "Ngiyaqonda ukuthi ufuna usizo. Ake ngikuphe ukuqondiswa ngalesi sihloko.",
+      "response2": "Lowo umbuzo omuhle! Ngokusekelwe ekubuzeni kwakho, ngingancoma ukuthi ubheke amakhasi ethu athile okusekela ukuthola ulwazi oluningiliziwe.",
+      "response3": "Ngilapha ukusiza! Ukuze uthole usizo olusheshayo ezindabeni eziphuthumayo, ungangabazi ukushayela imigqa yethu yezimo eziphuthumayo.",
+      "response4": "Ngiyabonga ngokuthinta. Ngingakusiza ukuxhumanisa nezinsiza ezifanele nezinsizakalo zokusekela.",
+      "response5": "Lowo umbuzo obalulekile. Ipulatifomu yethu inikeza ukusekela okubanzi kwezinsizakalo zezimali, ukuphepha, nezempilo."
+    }
+  },
+  "sanitaryAid": {
+    "title": "Usizo Lwezempilo & Ukusekela Kwezemvelo",
+    "subtitle": "Thola amikhiqizo yamahhala ezempilo nezidingo zezemvelo emabhokisini ethu okunikela eNingizimu Afrika",
+    "donationBins": {
+      "title": "Izindawo Zamabhokisi Okunikela",
+      "address": "Ikheli:",
+      "hours": "Amahora:",
+      "contact": "Ukuxhumana:",
+      "availableItems": "Izinto Ezikhona:",
+      "lastRestocked": "Kugcwaliswe Kamuva:",
+      "daysAgo": "izinsuku ezedlule",
+      "callLocation": "Shayela Indawo",
+      "getDirections": "Thola Izikhombisi",
+      "locations": {
+        "capeTown": {
+          "name": "Umtapo Wezincwadi Omkhulu waseKapa",
+          "address": "60 Strand Street, Cape Town City Centre, Western Cape",
+          "phone": "+27 21 400 3500",
+          "hours": "NgoMsombuluko-NgoLwesihlanu: 8:00 AM - 6:00 PM, NgoMgqibelo: 9:00 AM - 4:00 PM",
+          "description": "Itholakala esangweni elikhulu. Ukufinyelela kwamahhala kumikhiqizo ebalulekile yezemvelo kwabesifazane abaswele.",
+          "contact": "Sarah Mthembu"
+        },
+        "johannesburg": {
+          "name": "Ikliniki Yezempilo Yabesifazane yaseJohannesburg",
+          "address": "123 Commissioner Street, Johannesburg Central, Gauteng",
+          "phone": "+27 11 358 0000",
+          "hours": "NgoMsombuluko-NgoLwesihlanu: 7:00 AM - 7:00 PM, Ngamaphelasonto: 8:00 AM - 2:00 PM",
+          "description": "Amikhiqizo yamahhala yezemvelo atholakala endaweni yokwamukela. Inqubomgomo yokungabuzi mibuzo.",
+          "contact": "Dr. Nalini Patel"
+        },
+        "durban": {
+          "name": "Isikhungo Somphakathi saseDurban",
+          "address": "45 Dr Pixley KaSeme Street, Durban Central, KwaZulu-Natal",
+          "phone": "+27 31 311 1111",
+          "hours": "NgoMsombuluko-NgoMgqibelo: 8:00 AM - 5:00 PM, NgeSonto: Kuvaliwe",
+          "description": "Ibhokisi lokunikela elisekelwa umphakathi. Zisizele kokho okudingayo.",
+          "contact": "Nomthandazo Dlamini"
+        }
+      },
+      "items": {
+        "sanitaryPads": "Amaphedi Ezempilo",
+        "tampons": "Ama-tampon",
+        "menstrualCups": "Izinkomishi Zokuhla",
+        "soap": "Insipho",
+        "underwear": "Izingubo Zangaphansi",
+        "toiletPaper": "Iphepha Lasendlini",
+        "shampoo": "I-shampoo",
+        "toothbrush": "Ibrashi Yamazinyo",
+        "toothpaste": "Ikhrimi Yamazinyo"
+      },
+      "status": {
+        "wellStocked": "Kugcwele Kahle",
+        "lowStock": "Isitoko Esiphansi",
+        "outOfStock": "Asikho Esitokweni"
+      }
+    },
+    "hygieneTips": {
+      "title": "Amathiphu Ezemvelo",
+      "menstrualHygiene": {
+        "title": "Ukuhlanzeka Kokuhla",
+        "tips": {
+          "tip1": "Shintsha amikhiqizo ezempilo njalo emahora angu-4-6",
+          "tip2": "Geza izandla ngaphambi nangemuva kokushintsha amikhiqizo",
+          "tip3": "Sebenzisa indlela eyodwa kuphela ngesikhathi (iphedi NOMA i-tampon)",
+          "tip4": "Gcina umkhondo womjikelezo wakho ukuze uhlele kangcono"
+        }
+      },
+      "generalHygiene": {
+        "title": "Ukuhlanzeka Okuvamile",
+        "tips": {
+          "tip1": "Geza izindawo zangasese ngamanzi afudumele nesipho esithambile",
+          "tip2": "Hlala usula kusuka phambili uye emuva",
+          "tip3": "Gqoka izingubo zangaphansi ezihlanzekile, ze-cotton",
+          "tip4": "Shintsha izingubo zangaphansi nsuku zonke"
+        }
+      },
+      "emergencyAlternatives": {
+        "title": "Ezinye Izindlela Zezimo Eziphuthumayo",
+        "tips": {
+          "tip1": "Indwangu ehlanzekile ingasetshenziswa okwesikhashana",
+          "tip2": "Iphepha lasendlini eligoqwe izikhathi eziningi",
+          "tip3": "Hlala ubeka ukuhlanzeka kuqala",
+          "tip4": "Funa amikhiqizo afanele ngokushesha okukhulu"
+        }
+      }
+    },
+    "donation": {
+      "title": "Ufuna Ukunikela?",
+      "description": "Siza ukugcina amabhokisi ethu okunikela egcwele amikhiqizo abalulekile ezemvelo.",
+      "items": {
+        "sanitaryProducts": "Amaphedi ezempilo & ama-tampon",
+        "hygieneItems": "Insipho & izinto zezemvelo zomuntu siqu",
+        "underwear": "Izingubo zangaphansi ezintsha (zonke izisayizi)"
+      },
+      "learnMore": "Funda Kabanzi Ngokunukela"
+    }
+  },
+  "gbvSupport": {
+    "title": "Ukusekela kwe-GBV & Amakhaya Aphephile",
+    "subtitle": "Ukusekela okusheshayo nezindawo zamakhaya aphephile kwabesifazane ababhekene nodlame olusekelwe ebulilini",
+    "emergencyAlert": {
+      "title": "Usengozini Esheshayo?",
+      "description": "Shayela u-0800 428 428 (Isikhungo Sokulawula i-GBV) noma u-10111 (Amaphoyisa) ngokushesha. Lezi zinsizakalo ziyatholakala 24/7 futhi zimahhala ngokuphelele."
+    },
+    "safeShelters": {
+      "title": "Izindawo Zamakhaya Aphephile",
+      "address": "Ikheli:",
+      "hours": "Amahora:",
+      "contactNumbers": "Izinombolo Zokuxhumana:",
+      "general": "Okuvamile:",
+      "emergency": "Isimo Esiphuthumayo:",
+      "servicesAvailable": "Izinsizakalo Ezikhona:",
+      "emergencyCall": "Ucingo Lwesimo Esiphuthumayo",
+      "generalContact": "Ukuxhumana Okuvamile",
+      "capacity": {
+        "spotsAvailable": "izikhala ezitholakalayo",
+        "limited": "Kukhawulelwe",
+        "full": "Kugcwele"
+      },
+      "locations": {
+        "safeHaven": {
+          "name": "Ikhaya Eliphephile Labesifazane",
+          "address": "123 Hope Street, Cape Town, Western Cape",
+          "phone": "+27 21 123 4567",
+          "emergency": "+27 21 123 4568",
+          "hours": "24/7 Ukufinyelela Kwesimo Esiphuthumayo",
+          "description": "Indawo ephephile enikeza ukusekela okubanzi kwabesifazane nezingane ezibalekela udlame lwasekhaya."
+        },
+        "ubuntu": {
+          "name": "Indawo Engcwele Yabesifazane i-Ubuntu",
+          "address": "456 Freedom Avenue, Johannesburg, Gauteng",
+          "phone": "+27 11 987 6543",
+          "emergency": "+27 11 987 6544",
+          "hours": "24/7 Ukufinyelela Kwesimo Esiphuthumayo",
+          "description": "Inikeza indawo ephephile nezinsizakalo zokusekela eziphelele kwabasinde bodlame olusekelwe ebulilini."
+        },
+        "themba": {
+          "name": "Indlu kaThemba",
+          "address": "789 Courage Road, Durban, KwaZulu-Natal",
+          "phone": "+27 31 555 7890",
+          "emergency": "+27 31 555 7891",
+          "hours": "24/7 Ukufinyelela Kwesimo Esiphuthumayo",
+          "description": "Ikhaya elisekelwe emphakathini elinikeza ukuphepha okusheshayo nezinhlelo zokuqinisa isikhathi eside."
+        }
+      },
+      "services": {
+        "emergencyAccommodation": "Indawo Yokuhlala Yesimo Esiphuthumayo",
+        "counseling": "Ukweluleka",
+        "legalSupport": "Ukusekela Kwezomthetho",
+        "jobTraining": "Ukuqeqeshwa Komsebenzi",
+        "safeHousing": "Izindlu Eziphephile",
+        "traumaCounseling": "Ukweluleka Ngokunxushwa",
+        "legalAid": "Usizo Lwezomthetho",
+        "childrenSupport": "Ukusekela Kwezingane",
+        "emergencyShelter": "Ikhaya Lesimo Esiphuthumayo",
+        "medicalSupport": "Ukusekela Kwezokwelapha",
+        "courtSupport": "Ukusekela Kwenkantolo",
+        "skillsDevelopment": "Ukuthuthukiswa Kwamakhono"
+      }
+    },
+    "emergencyContacts": {
+      "title": "Oxhumana Nabo Ezimweni Eziphuthumayo",
+      "callNow": "Shayela Manje",
+      "contacts": {
+        "gbvCommand": {
+          "name": "Isikhungo Sikazwelonke Sokulawula i-GBV",
+          "number": "0800 428 428",
+          "description": "Umugqa wosizo ongakhokhi 24/7 wosizo olusheshayo"
+        },
+        "police": {
+          "name": "Insizakalo Yamaphoyisa YaseNingizimu Afrika",
+          "number": "10111",
+          "description": "Ukusabela kwamaphoyisa ezimweni eziphuthumayo"
+        },
+        "lifeline": {
+          "name": "I-LifeLine Kazwelonke",
+          "number": "0861 322 322",
+          "description": "24/7 ukweluleka nokusekela kwezinkinga"
+        },
+        "childline": {
+          "name": "I-Childline YaseNingizimu Afrika",
+          "number": "116",
+          "description": "Ukusekela kwezingane ezinkingeni"
+        }
+      }
+    },
+    "legalResources": {
+      "title": "Izinsiza Zezomthetho",
+      "legalAid": {
+        "name": "Usizo Lwezomthetho LwaseNingizimu Afrika",
+        "description": "Usizo lwezomthetho lwamahhala: 0800 110 110"
+      },
+      "medicalSupport": {
+        "name": "Ukusekela Kwezokwelapha",
+        "description": "Kuyatholakala kuzo zonke izindawo zamakhaya"
+      }
+    }
+  },
+  "language": {
+    "selector": "Ulimi",
+    "languages": {
+      "en": "IsiNgisi",
+      "af": "IsiBhunu",
+      "zu": "isiZulu",
+      "xh": "isiXhosa",
+      "st": "Sesotho",
+      "tn": "Setswana",
+      "ss": "siSwati",
+      "ve": "Tshivenḓa",
+      "ts": "Xitsonga",
+      "nr": "isiNdebele",
+      "nso": "Sepedi"
+    }
+  }
+}

@@ -76,15 +76,8 @@ export const Dashboard = ({ onCapsuleClick }: DashboardProps) => {
     window.location.reload();
   };
 
-  // Demo capsules for non-authenticated users
+  // Demo capsules for non-authenticated users (excluding medical since user has real one)
   const capsules = [
-    {
-      id: "medical",
-      title: "Medical Capsule",
-      icon: Heart,
-      gradient: "medical-gradient",
-      lastAccess: "2 hours ago"
-    },
     {
       id: "legal",
       title: "Legal & Will",

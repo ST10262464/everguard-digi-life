@@ -1,5 +1,5 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "everguard-digi-life",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -85,7 +85,6 @@
     "ethers": "^6.7.0",
     "globals": "^15.15.0",
     "hardhat": "^2.19.0",
-    "lovable-tagger": "^1.1.11",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",

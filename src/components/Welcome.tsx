@@ -1,12 +1,16 @@
 import { Button } from "@/components/ui/button";
-import { Shield, ArrowRight } from "lucide-react";
+import { Shield, ArrowRight, LogIn, UserPlus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import heroVault from "@/assets/hero-vault.png";
 
 interface WelcomeProps {
   onGetStarted: () => void;
+  showAuth?: boolean;
 }
 
-export const Welcome = ({ onGetStarted }: WelcomeProps) => {
+export const Welcome = ({ onGetStarted, showAuth = false }: WelcomeProps) => {
+  const navigate = useNavigate();
+  
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden">
       {/* Animated background elements */}
@@ -51,22 +55,48 @@ export const Welcome = ({ onGetStarted }: WelcomeProps) => {
 
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6">
-          <Button 
-            size="lg" 
-            className="vault-gradient text-white px-8 py-6 text-lg hover:opacity-90 transition-smooth group"
-            onClick={onGetStarted}
-          >
-            Create Your Vault
-            <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-smooth" />
-          </Button>
-          
-          <Button 
-            size="lg" 
-            variant="outline"
-            className="px-8 py-6 text-lg border-2 hover:bg-muted transition-smooth"
-          >
-            Learn More
-          </Button>
+          {showAuth ? (
+            <>
+              <Button 
+                size="lg" 
+                className="vault-gradient text-white px-8 py-6 text-lg hover:opacity-90 transition-smooth group"
+                onClick={() => navigate('/register')}
+              >
+                <UserPlus className="mr-2 w-5 h-5" />
+                Create Account
+                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-smooth" />
+              </Button>
+              
+              <Button 
+                size="lg" 
+                variant="outline"
+                className="px-8 py-6 text-lg border-2 hover:bg-muted transition-smooth"
+                onClick={() => navigate('/login')}
+              >
+                <LogIn className="mr-2 w-5 h-5" />
+                Login
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button 
+                size="lg" 
+                className="vault-gradient text-white px-8 py-6 text-lg hover:opacity-90 transition-smooth group"
+                onClick={onGetStarted}
+              >
+                Create Your Vault
+                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-smooth" />
+              </Button>
+              
+              <Button 
+                size="lg" 
+                variant="outline"
+                className="px-8 py-6 text-lg border-2 hover:bg-muted transition-smooth"
+              >
+                Learn More
+              </Button>
+            </>
+          )}
         </div>
 
         {/* Trust Indicators */}

@@ -120,6 +120,22 @@ function retryTransaction(txId) {
 }
 
 /**
+ * Get all transactions
+ */
+function getAllTransactions() {
+  const transactions = [];
+  
+  for (const [txId, tx] of pendingTransactions.entries()) {
+    transactions.push(tx);
+  }
+  
+  // Sort by creation date (newest first)
+  transactions.sort((a, b) => b.createdAt - a.createdAt);
+  
+  return transactions;
+}
+
+/**
  * Get queue statistics
  */
 function getQueueStats() {
@@ -170,6 +186,7 @@ module.exports = {
   getCapsuleTransactions,
   getPendingTransactions,
   retryTransaction,
+  getAllTransactions,
   getQueueStats,
   cleanupOldTransactions
 };

@@ -1,13 +1,12 @@
 const { encryptIfEnabled, decryptIfEnabled } = require('../utils/crypto');
 const { computeCanonicalHash } = require('../utils/hash');
+const { getFirestore, COLLECTIONS } = require('../config/firebase');
 
 /**
  * Capsule Service for EverGuard
- * Handles encrypted capsule storage and retrieval (in-memory for demo)
+ * Handles encrypted capsule storage and retrieval using Firestore
  */
 
-// In-memory storage (replace with Firebase in production)
-const capsules = new Map();
 let capsuleIdCounter = 1;
 
 /**
@@ -17,22 +16,28 @@ async function createCapsule(userId, capsuleData, publicKey) {
   try {
     console.log(`📦 [CAPSULE] Creating capsule for user: ${userId}`);
     
+    const db = getFirestore();
+    
+    // Support both old format (with .content) and new format (flat structure)
+    const contentToEncrypt = capsuleData.content || capsuleData;
+    const capsuleType = capsuleData.type || capsuleData.capsuleType || 'medical';
+    
     // Encrypt sensitive medical/legal data
-    const encryptedContent = encryptIfEnabled(JSON.stringify(capsuleData.content));
+    const encryptedContent = encryptIfEnabled(JSON.stringify(contentToEncrypt));
     const contentHash = computeCanonicalHash(encryptedContent);
     
-    const capsuleId = `cap_${capsuleIdCounter++}`;
+    const capsuleId = `cap_${Date.now()}_${Math.random().toString(36).substring(7)}`;
     
     const capsule = {
       id: capsuleId,
       blockchainId: null, // Will be set after blockchain logging
       ownerId: userId,
       ownerPublicKey: publicKey || null,
-      capsuleType: capsuleData.type, // "medical", "legal", "financial"
+      capsuleType: capsuleType,
       encryptedContent: encryptedContent,
       contentHash: contentHash,
       metadata: {
-        title: capsuleData.title || `${capsuleData.type} Capsule`,
+        title: capsuleData.title || `${capsuleType} Capsule`,
         description: capsuleData.description || '',
         tags: capsuleData.tags || []
       },
@@ -41,8 +46,8 @@ async function createCapsule(userId, capsuleData, publicKey) {
       updatedAt: new Date().toISOString()
     };
     
-    // Store in memory
-    capsules.set(capsuleId, capsule);
+    // Store in Firestore
+    await db.collection(COLLECTIONS.CAPSULES).doc(capsuleId).set(capsule);
     
     console.log(`✅ [CAPSULE] Created capsule: ${capsuleId}`);
     console.log(`🔐 [CAPSULE] Content hash: ${contentHash.substring(0, 20)}...`);
@@ -68,13 +73,14 @@ async function createCapsule(userId, capsuleData, publicKey) {
  */
 async function getCapsule(capsuleId) {
   try {
-    const capsule = capsules.get(capsuleId);
+    const db = getFirestore();
+    const doc = await db.collection(COLLECTIONS.CAPSULES).doc(capsuleId).get();
     
-    if (!capsule) {
+    if (!doc.exists) {
       return null;
     }
     
-    return capsule;
+    return doc.data();
   } catch (error) {
     console.error('❌ [CAPSULE] Error getting capsule:', error);
     throw error;
@@ -86,7 +92,7 @@ async function getCapsule(capsuleId) {
  */
 async function getDecryptedCapsuleContent(capsuleId) {
   try {
-    const capsule = capsules.get(capsuleId);
+    const capsule = await getCapsule(capsuleId);
     
     if (!capsule) {
       throw new Error('Capsule not found');
@@ -107,25 +113,65 @@ async function getDecryptedCapsuleContent(capsuleId) {
 }
 
 /**
+ * Get ICE (In Case of Emergency) data only - for non-verified users
+ * Returns ONLY emergency contact information, no medical data
+ */
+async function getIceData(capsuleId) {
+  try {
+    console.log(`🚨 [ICE] Retrieving ICE data for capsule: ${capsuleId}`);
+    
+    const capsule = await getCapsule(capsuleId);
+    
+    if (!capsule) {
+      throw new Error('Capsule not found');
+    }
+    
+    // Decrypt content
+    const decryptedContent = decryptIfEnabled(capsule.encryptedContent);
+    const content = JSON.parse(decryptedContent);
+    
+    // Extract ONLY emergency contact information
+    const iceData = {
+      capsuleId: capsule.id,
+      capsuleType: capsule.capsuleType,
+      ownerName: content.ownerName || 'Patient',
+      emergencyContact: content.emergencyContact || null,
+      // DO NOT include: bloodType, allergies, medications, conditions, etc.
+    };
+    
+    console.log(`✅ [ICE] ICE data extracted (emergency contact only)`);
+    
+    return iceData;
+  } catch (error) {
+    console.error('❌ [ICE] Error getting ICE data:', error);
+    throw error;
+  }
+}
+
+/**
  * List all capsules for a user
  */
 async function listUserCapsules(userId) {
   try {
-    const userCapsules = [];
+    const db = getFirestore();
+    const snapshot = await db.collection(COLLECTIONS.CAPSULES)
+      .where('ownerId', '==', userId)
+      .where('status', '==', 'active')
+      .get();
     
-    for (const [id, capsule] of capsules.entries()) {
-      if (capsule.ownerId === userId && capsule.status === 'active') {
-        userCapsules.push({
-          id: capsule.id,
-          ownerId: capsule.ownerId,
-          capsuleType: capsule.capsuleType,
-          contentHash: capsule.contentHash,
-          metadata: capsule.metadata,
-          status: capsule.status,
-          createdAt: capsule.createdAt
-        });
-      }
-    }
+    const userCapsules = [];
+    snapshot.forEach(doc => {
+      const capsule = doc.data();
+      userCapsules.push({
+        id: capsule.id,
+        ownerId: capsule.ownerId,
+        capsuleType: capsule.capsuleType,
+        contentHash: capsule.contentHash,
+        metadata: capsule.metadata,
+        status: capsule.status,
+        createdAt: capsule.createdAt
+      });
+    });
     
     console.log(`📋 [CAPSULE] Found ${userCapsules.length} capsules for user: ${userId}`);
     return userCapsules;
@@ -139,20 +185,28 @@ async function listUserCapsules(userId) {
  * Get all capsules (for demo purposes)
  */
 async function getAllCapsules() {
-  const allCapsules = [];
-  
-  for (const [id, capsule] of capsules.entries()) {
-    allCapsules.push({
-      id: capsule.id,
-      ownerId: capsule.ownerId,
-      capsuleType: capsule.capsuleType,
-      metadata: capsule.metadata,
-      status: capsule.status,
-      createdAt: capsule.createdAt
+  try {
+    const db = getFirestore();
+    const snapshot = await db.collection(COLLECTIONS.CAPSULES).get();
+    
+    const allCapsules = [];
+    snapshot.forEach(doc => {
+      const capsule = doc.data();
+      allCapsules.push({
+        id: capsule.id,
+        ownerId: capsule.ownerId,
+        capsuleType: capsule.capsuleType,
+        metadata: capsule.metadata,
+        status: capsule.status,
+        createdAt: capsule.createdAt
+      });
     });
+    
+    return allCapsules;
+  } catch (error) {
+    console.error('❌ [CAPSULE] Error getting all capsules:', error);
+    throw error;
   }
-  
-  return allCapsules;
 }
 
 /**
@@ -160,17 +214,24 @@ async function getAllCapsules() {
  */
 async function updateCapsuleBlockchainId(capsuleId, blockchainId) {
   try {
-    const capsule = capsules.get(capsuleId);
+    const db = getFirestore();
+    const capsuleRef = db.collection(COLLECTIONS.CAPSULES).doc(capsuleId);
+    const doc = await capsuleRef.get();
     
-    if (!capsule) {
+    if (!doc.exists) {
       throw new Error('Capsule not found');
     }
     
-    capsule.blockchainId = blockchainId;
-    capsule.updatedAt = new Date().toISOString();
+    await capsuleRef.update({
+      blockchainId: blockchainId,
+      updatedAt: new Date().toISOString()
+    });
     
     console.log(`🔗 [CAPSULE] Updated blockchain ID for ${capsuleId}: ${blockchainId}`);
-    return capsule;
+    
+    // Return updated capsule
+    const updated = await capsuleRef.get();
+    return updated.data();
   } catch (error) {
     console.error('❌ [CAPSULE] Error updating blockchain ID:', error);
     throw error;
@@ -182,21 +243,30 @@ async function updateCapsuleBlockchainId(capsuleId, blockchainId) {
  */
 async function revokeCapsule(capsuleId, userId) {
   try {
-    const capsule = capsules.get(capsuleId);
+    const db = getFirestore();
+    const capsuleRef = db.collection(COLLECTIONS.CAPSULES).doc(capsuleId);
+    const doc = await capsuleRef.get();
     
-    if (!capsule) {
+    if (!doc.exists) {
       throw new Error('Capsule not found');
     }
+    
+    const capsule = doc.data();
     
     if (capsule.ownerId !== userId) {
       throw new Error('Not authorized to revoke this capsule');
     }
     
-    capsule.status = 'revoked';
-    capsule.updatedAt = new Date().toISOString();
+    await capsuleRef.update({
+      status: 'revoked',
+      updatedAt: new Date().toISOString()
+    });
     
     console.log(`🚫 [CAPSULE] Revoked capsule: ${capsuleId}`);
-    return capsule;
+    
+    // Return updated capsule
+    const updated = await capsuleRef.get();
+    return updated.data();
   } catch (error) {
     console.error('❌ [CAPSULE] Error revoking capsule:', error);
     throw error;
@@ -207,6 +277,7 @@ module.exports = {
   createCapsule,
   getCapsule,
   getDecryptedCapsuleContent,
+  getIceData,
   listUserCapsules,
   getAllCapsules,
   updateCapsuleBlockchainId,

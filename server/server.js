@@ -3,11 +3,23 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const QRCode = require('qrcode');
+const { initializeFirebase, getFirestore, COLLECTIONS } = require('./config/firebase');
 const { getConnectionStatus, storeCapsuleOnBlockchain, issueBurstKeyOnChain, consumeBurstKeyOnChain } = require('./blockchain');
-const { createCapsule, getCapsule, getDecryptedCapsuleContent, listUserCapsules, getAllCapsules, updateCapsuleBlockchainId } = require('./services/capsuleService');
-const { issueBurstKey, verifyAndConsumeBurstKey, getCapsuleBurstKeys, updateBurstKeyBlockchainId } = require('./utils/burstKey');
+const { createCapsule, getCapsule, getDecryptedCapsuleContent, getIceData, listUserCapsules, getAllCapsules, updateCapsuleBlockchainId } = require('./services/capsuleService');
+const { issueBurstKey, verifyAndConsumeBurstKey, getCapsuleBurstKeys, updateBurstKeyBlockchainId, checkActiveBurstKey } = require('./utils/burstKey');
 const { computeCanonicalHash } = require('./utils/hash');
 const { addPendingTransaction, updateTransactionStatus, getCapsuleTransactions, getQueueStats } = require('./utils/transactionQueue');
+const { logRestrictedAccessAttempt, logActiveKeyBlocked, logBurstKeyIssued, logBurstKeyConsumed, getCapsuleAuditLog } = require('./utils/auditLog');
+
+// Initialize Firebase
+try {
+  initializeFirebase();
+} catch (error) {
+  console.error('❌ [STARTUP] Failed to initialize Firebase:', error.message);
+  console.error('⚠️  [STARTUP] Server will not start without Firebase connection');
+  process.exit(1);
+}
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -42,6 +54,15 @@ app.use(morgan('dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Import routes and middleware
+const authRoutes = require('./routes/auth');
+const adminRoutes = require('./routes/admin');
+const { authenticateToken, optionalAuth } = require('./middleware/auth');
+
+// Mount routes
+app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ 
@@ -70,10 +91,16 @@ app.get('/api/blockchain/status', async (req, res) => {
 
 // ============ Capsule Management Routes ============
 
-// Create a new capsule
-app.post('/api/capsules', async (req, res) => {
+// Create a new capsule (with optional auth)
+app.post('/api/capsules', optionalAuth, async (req, res) => {
   try {
-    const { userId, capsuleData, publicKey } = req.body;
+    let { userId, capsuleData, publicKey } = req.body;
+    
+    // If user is authenticated, use their ID (overrides body userId for security)
+    if (req.user) {
+      userId = req.user.id;
+      console.log(`🔐 [API] Creating capsule for authenticated user: ${userId}`);
+    }
     
     if (!userId || !capsuleData) {
       return res.status(400).json({
@@ -129,8 +156,8 @@ app.post('/api/capsules', async (req, res) => {
   }
 });
 
-// Get capsule by ID
-app.get('/api/capsules/:id', async (req, res) => {
+// Get capsule by ID (with optional auth for owner access)
+app.get('/api/capsules/:id', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const capsule = await getCapsule(id);
@@ -142,18 +169,34 @@ app.get('/api/capsules/:id', async (req, res) => {
       });
     }
     
-    // Return capsule without encrypted content
+    // For capsule owners, return decrypted content
+    // For others, return only metadata
+    let capsuleData = {
+      id: capsule.id,
+      ownerId: capsule.ownerId,
+      capsuleType: capsule.capsuleType,
+      contentHash: capsule.contentHash,
+      metadata: capsule.metadata,
+      status: capsule.status,
+      createdAt: capsule.createdAt
+    };
+    
+    // Check if user is authenticated and owns this capsule
+    if (req.user && req.user.id === capsule.ownerId) {
+      console.log(`🔐 [API] Owner accessing capsule: ${id}`);
+      // Owner can see decrypted content
+      const decryptedCapsule = await getDecryptedCapsuleContent(id);
+      capsuleData = {
+        ...capsuleData,
+        content: decryptedCapsule.content
+      };
+    } else {
+      console.log(`🔒 [API] Non-owner accessing capsule: ${id}`);
+    }
+    
     res.json({
       success: true,
-      capsule: {
-        id: capsule.id,
-        ownerId: capsule.ownerId,
-        capsuleType: capsule.capsuleType,
-        contentHash: capsule.contentHash,
-        metadata: capsule.metadata,
-        status: capsule.status,
-        createdAt: capsule.createdAt
-      }
+      capsule: capsuleData
     });
   } catch (error) {
     res.status(500).json({
@@ -163,10 +206,63 @@ app.get('/api/capsules/:id', async (req, res) => {
   }
 });
 
-// List all capsules (for demo)
-app.get('/api/capsules', async (req, res) => {
+// Generate QR code for a capsule
+app.get('/api/capsules/:id/qrcode', async (req, res) => {
   try {
-    const { userId } = req.query;
+    const { id } = req.params;
+    
+    // Verify capsule exists
+    const capsule = await getCapsule(id);
+    if (!capsule) {
+      return res.status(404).json({
+        success: false,
+        error: 'Capsule not found'
+      });
+    }
+    
+    // Generate QR code data
+    const qrData = JSON.stringify({
+      capsuleId: id,
+      type: 'emergency_access',
+      platform: 'EverGuard'
+    });
+    
+    // Generate QR code as Data URL
+    const qrCodeDataURL = await QRCode.toDataURL(qrData, {
+      errorCorrectionLevel: 'H',
+      type: 'image/png',
+      width: 400,
+      margin: 2,
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF'
+      }
+    });
+    
+    res.json({
+      success: true,
+      qrCode: qrCodeDataURL,
+      capsuleId: id,
+      capsuleType: capsule.capsuleType
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// List all capsules (for demo) or user-specific (with optional auth)
+app.get('/api/capsules', optionalAuth, async (req, res) => {
+  try {
+    let { userId } = req.query;
+    
+    // If user is authenticated, return only their capsules
+    if (req.user) {
+      userId = req.user.id;
+      console.log(`🔐 [API] Fetching capsules for authenticated user: ${userId}`);
+    }
     
     let capsules;
     if (userId) {
@@ -211,8 +307,101 @@ app.post('/api/emergency/request-access', async (req, res) => {
       });
     }
     
-    // TODO: Verify medic credentials (for now, accept all requests)
-    console.log(`👨‍⚕️ [API] Medic verification: ${medicId} - APPROVED (demo mode)`);
+    // Verify medic credentials against Firestore registry
+    const db = getFirestore();
+    const medicDoc = await db.collection(COLLECTIONS.MEDIC_REGISTRY).doc(medicId).get();
+    
+    if (!medicDoc.exists) {
+      console.log(`🚨 [API] Non-verified user: ${medicId} - Returning ICE view`);
+      
+      // Log restricted access attempt
+      await logRestrictedAccessAttempt(
+        capsuleId,
+        medicId,
+        'Not in medic registry',
+        context
+      );
+      
+      // PHASE 2: Return ICE data instead of denying access
+      try {
+        const iceData = await getIceData(capsuleId);
+        
+        return res.status(200).json({
+          success: true,
+          accessLevel: 'ice', // Indicates restricted access
+          message: 'Limited access granted - Emergency contact information only',
+          iceData: iceData,
+          fullAccessRequires: 'Verified medical professional credentials'
+        });
+      } catch (iceError) {
+        console.error(`❌ [API] Error retrieving ICE data:`, iceError);
+        return res.status(500).json({
+          success: false,
+          error: 'Unable to retrieve emergency contact information'
+        });
+      }
+    }
+    
+    const medicData = medicDoc.data();
+    if (!medicData.verified) {
+      console.log(`🚨 [API] Unverified medic: ${medicId} - Returning ICE view`);
+      
+      // Log restricted access attempt
+      await logRestrictedAccessAttempt(
+        capsuleId,
+        medicId,
+        'Medical credentials not verified',
+        context
+      );
+      
+      // PHASE 2: Return ICE data for unverified medics too
+      try {
+        const iceData = await getIceData(capsuleId);
+        
+        return res.status(200).json({
+          success: true,
+          accessLevel: 'ice', // Indicates restricted access
+          message: 'Limited access granted - Emergency contact information only',
+          iceData: iceData,
+          fullAccessRequires: 'Verified medical professional credentials',
+          note: 'Your medical credentials are pending verification'
+        });
+      } catch (iceError) {
+        console.error(`❌ [API] Error retrieving ICE data:`, iceError);
+        return res.status(500).json({
+          success: false,
+          error: 'Unable to retrieve emergency contact information'
+        });
+      }
+    }
+    
+    console.log(`✅ [API] Medic verification: ${medicId} (${medicData.name}) - APPROVED`);
+    console.log(`   License: ${medicData.licenseNumber}`);
+    
+    // PHASE 1: Check for active BurstKey (strict blocking)
+    const existingActiveKey = await checkActiveBurstKey(medicId, capsuleId);
+    if (existingActiveKey) {
+      console.log(`⛔ [API] Active BurstKey exists: ${existingActiveKey.burstId}`);
+      console.log(`   Expires at: ${new Date(existingActiveKey.expiresAt).toISOString()}`);
+      
+      // Log blocked attempt
+      await logActiveKeyBlocked(
+        capsuleId,
+        medicId,
+        existingActiveKey.burstId,
+        context
+      );
+      
+      return res.status(409).json({
+        success: false,
+        error: 'Active BurstKey already exists',
+        existingKey: {
+          burstId: existingActiveKey.burstId,
+          expiresAt: new Date(existingActiveKey.expiresAt).toISOString(),
+          expiresIn: Math.floor((existingActiveKey.expiresAt - Date.now()) / 1000)
+        }
+      });
+    }
     
     // Issue BurstKey
     const burstKeyResult = await issueBurstKey(
@@ -220,6 +409,15 @@ app.post('/api/emergency/request-access', async (req, res) => {
       medicId,
       medicPubKey,
       context
+    );
+    
+    // Log BurstKey issuance to audit log
+    await logBurstKeyIssued(
+      capsuleId,
+      burstKeyResult.burstId,
+      medicId,
+      burstKeyResult.expiresAt,
+      null // txHash will be added when blockchain confirms
     );
     
     // Log on BlockDAG (non-blocking)
@@ -304,6 +502,14 @@ app.post('/api/emergency/access-capsule', async (req, res) => {
     
     // Get decrypted capsule content
     const capsule = await getDecryptedCapsuleContent(verifyResult.capsuleId);
+    
+    // Log BurstKey consumption to audit log
+    await logBurstKeyConsumed(
+      verifyResult.capsuleId,
+      burstKey,
+      medicId,
+      null // txHash will be added when blockchain confirms
+    );
     
     // Log consumption on BlockDAG (non-blocking)
     setImmediate(async () => {
@@ -408,14 +614,18 @@ app.get('/api/capsules/:id/audit', async (req, res) => {
       });
     }
     
-    // Get BurstKeys from memory
+    // Get full audit log from Firestore (includes RESTRICTED_ACCESS_ATTEMPT, ACTIVE_KEY_BLOCKED, etc.)
+    const auditLog = await getCapsuleAuditLog(id);
+    
+    // Also get BurstKeys for backward compatibility
     const burstKeys = await getCapsuleBurstKeys(id);
     
     res.json({
       success: true,
       capsuleId: id,
       accessCount: burstKeys.length,
-      accessLog: burstKeys
+      accessLog: auditLog.length > 0 ? auditLog : burstKeys, // Prefer full audit log if available
+      burstKeys: burstKeys // Keep for backward compatibility
     });
   } catch (error) {
     res.status(500).json({
@@ -495,6 +705,7 @@ app.listen(PORT, () => {
   console.log('  POST /api/capsules                      - Create capsule');
   console.log('  GET  /api/capsules                      - List capsules');
   console.log('  GET  /api/capsules/:id                  - Get capsule');
+  console.log('  GET  /api/capsules/:id/qrcode           - Generate QR code');
   console.log('  GET  /api/capsules/:id/audit            - Get access log');
   console.log('  GET  /api/capsules/:id/transactions     - Get blockchain TXs');
   console.log('');

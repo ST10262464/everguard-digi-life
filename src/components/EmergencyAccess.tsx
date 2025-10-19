@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { IceView } from "./IceView";
 import { 
   ArrowLeft, 
   AlertCircle, 
@@ -11,9 +12,19 @@ import {
   Shield
 } from "lucide-react";
 
+interface UserRole {
+  id: string;
+  name: string;
+  role: 'patient' | 'verified_medic' | 'non_verified' | 'hacker';
+  medicId?: string;
+  publicKey?: string;
+  description: string;
+}
+
 interface EmergencyAccessProps {
   onBack: () => void;
   capsuleId?: string;
+  currentUser: UserRole;
 }
 
 interface EmergencyData {
@@ -29,9 +40,11 @@ interface EmergencyData {
 
 const API_URL = "http://localhost:5001";
 
-export const EmergencyAccess = ({ onBack, capsuleId = "cap_1" }: EmergencyAccessProps) => {
+export const EmergencyAccess = ({ onBack, capsuleId = "cap_1", currentUser }: EmergencyAccessProps) => {
   const [timeLeft, setTimeLeft] = useState(900); // 15 minutes in seconds
   const [emergencyData, setEmergencyData] = useState<EmergencyData | null>(null);
+  const [iceData, setIceData] = useState<any>(null);
+  const [accessLevel, setAccessLevel] = useState<'full' | 'ice' | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,11 +67,11 @@ export const EmergencyAccess = ({ onBack, capsuleId = "cap_1" }: EmergencyAccess
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             capsuleId: capsuleId,
-            medicId: "medic_demo",
-            medicPubKey: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb7",
+            medicId: currentUser.medicId || currentUser.id,
+            medicPubKey: currentUser.publicKey || "0xDefaultPubKey",
             context: {
               location: "Emergency Room",
-              deviceId: "demo_device",
+              deviceId: `${currentUser.role}_device`,
               attestation: "emergency"
             }
           })
@@ -67,19 +80,41 @@ export const EmergencyAccess = ({ onBack, capsuleId = "cap_1" }: EmergencyAccess
         if (!accessResponse.ok) throw new Error('Failed to request access');
         const accessData = await accessResponse.json();
 
-        // Step 2: Use BurstKey to get capsule data
+        // Check if we got ICE view instead of BurstKey (non-verified user)
+        if (accessData.accessLevel === 'ice') {
+          console.log('🚨 [FRONTEND] ICE view access granted for non-verified user');
+          setAccessLevel('ice');
+          setIceData(accessData.iceData);
+          return; // Don't try to get full data
+        }
+
+        // Check if we got a BurstKey
+        if (!accessData.burstKey) {
+          throw new Error('No BurstKey received. The user may not be verified or an active key already exists.');
+        }
+
+        // Step 2: Use BurstKey to get capsule data (verified medic only)
         const capsuleResponse = await fetch(`${API_URL}/api/emergency/access-capsule`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             burstKey: accessData.burstKey,
-            medicId: "medic_demo"
+            medicId: currentUser.medicId || currentUser.id
           })
         });
 
-        if (!capsuleResponse.ok) throw new Error('Failed to access capsule');
+        if (!capsuleResponse.ok) {
+          const errorData = await capsuleResponse.json().catch(() => ({ error: 'Failed to access capsule' }));
+          throw new Error(errorData.error || 'Failed to access capsule');
+        }
+        
         const capsuleData = await capsuleResponse.json();
 
+        if (!capsuleData.success || !capsuleData.content) {
+          throw new Error('No medical data received from capsule');
+        }
+
+        setAccessLevel('full');
         setEmergencyData(capsuleData.content);
       } catch (err) {
         console.error('Error fetching emergency data:', err);
@@ -90,7 +125,7 @@ export const EmergencyAccess = ({ onBack, capsuleId = "cap_1" }: EmergencyAccess
     };
 
     fetchEmergencyData();
-  }, [capsuleId]);
+  }, [capsuleId, currentUser]);
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
@@ -104,6 +139,26 @@ export const EmergencyAccess = ({ onBack, capsuleId = "cap_1" }: EmergencyAccess
             <p className="text-muted-foreground">Loading emergency data...</p>
           </div>
         </Card>
+      </div>
+    );
+  }
+
+  // Show ICE view for non-verified users
+  if (accessLevel === 'ice' && iceData) {
+    return (
+      <div>
+        <Button 
+          onClick={onBack} 
+          variant="ghost" 
+          className="absolute top-4 left-4 z-50"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
+        <IceView 
+          iceData={iceData}
+          message="You're viewing limited emergency information. Full medical data requires verified medical professional credentials."
+        />
       </div>
     );
   }
@@ -137,10 +192,15 @@ export const EmergencyAccess = ({ onBack, capsuleId = "cap_1" }: EmergencyAccess
             <ArrowLeft className="w-5 h-5" />
           </Button>
 
-          <Badge className="bg-white/20 text-white border-white/30 text-lg px-4 py-2">
-            <Clock className="w-5 h-5 mr-2" />
-            {minutes}:{seconds.toString().padStart(2, '0')}
-          </Badge>
+          <div className="flex gap-3 items-center">
+            <Badge className="bg-blue-500/80 text-white border-blue-400 px-3 py-1">
+              {currentUser.name}
+            </Badge>
+            <Badge className="bg-white/20 text-white border-white/30 text-lg px-4 py-2">
+              <Clock className="w-5 h-5 mr-2" />
+              {minutes}:{seconds.toString().padStart(2, '0')}
+            </Badge>
+          </div>
         </div>
 
         {/* Alert Banner */}

@@ -311,6 +311,76 @@ async function getCapsuleAccessLog(capsuleId) {
 }
 
 /**
+ * Get all blockchain transactions from contract events
+ */
+async function getAllBlockchainTransactions() {
+  try {
+    if (!contract) {
+      throw new Error('Contract not initialized');
+    }
+    
+    console.log('🔍 [BLOCKCHAIN] Querying all contract events...');
+    
+    // Get all CapsuleCreated events
+    const capsuleFilter = contract.filters.CapsuleCreated();
+    const capsuleEvents = await contract.queryFilter(capsuleFilter);
+    
+    // Get all BurstKeyIssued events
+    const burstKeyFilter = contract.filters.BurstKeyIssued();
+    const burstKeyEvents = await contract.queryFilter(burstKeyFilter);
+    
+    // Get all BurstKeyConsumed events
+    const consumedFilter = contract.filters.BurstKeyConsumed();
+    const consumedEvents = await contract.queryFilter(consumedFilter);
+    
+    // Combine and format all events
+    const allEvents = [
+      ...capsuleEvents.map(event => ({
+        type: 'CapsuleCreated',
+        txHash: event.transactionHash,
+        blockNumber: event.blockNumber,
+        timestamp: new Date().toISOString(), // Note: BlockDAG doesn't provide block timestamps
+        capsuleId: event.args.id.toString(),
+        capsuleHash: event.args.capsuleHash,
+        capsuleType: event.args.capsuleType,
+        owner: event.args.owner,
+        event: event
+      })),
+      ...burstKeyEvents.map(event => ({
+        type: 'BurstKeyIssued',
+        txHash: event.transactionHash,
+        blockNumber: event.blockNumber,
+        timestamp: new Date().toISOString(),
+        burstId: event.args.burstId.toString(),
+        capsuleId: event.args.capsuleId.toString(),
+        accessor: event.args.accessor,
+        expiresAt: event.args.expiresAt.toString(),
+        contextHash: event.args.contextHash,
+        event: event
+      })),
+      ...consumedEvents.map(event => ({
+        type: 'BurstKeyConsumed',
+        txHash: event.transactionHash,
+        blockNumber: event.blockNumber,
+        timestamp: new Date().toISOString(),
+        burstId: event.args.burstId.toString(),
+        event: event
+      }))
+    ];
+    
+    // Sort by block number (newest first)
+    allEvents.sort((a, b) => b.blockNumber - a.blockNumber);
+    
+    console.log(`📋 [BLOCKCHAIN] Retrieved ${allEvents.length} blockchain events`);
+    
+    return allEvents;
+  } catch (error) {
+    console.error('❌ [BLOCKCHAIN] Failed to get blockchain transactions:', error.message);
+    return [];
+  }
+}
+
+/**
  * Get wallet connection status
  */
 async function getConnectionStatus() {
@@ -337,6 +407,7 @@ module.exports = {
   issueBurstKeyOnChain,
   consumeBurstKeyOnChain,
   getCapsuleAccessLog,
+  getAllBlockchainTransactions,
   getConnectionStatus,
   provider,
   contract,

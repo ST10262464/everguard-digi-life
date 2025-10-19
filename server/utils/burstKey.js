@@ -1,14 +1,20 @@
 const crypto = require('crypto');
+const { getFirestore, COLLECTIONS } = require('../config/firebase');
 
 /**
  * BurstKey Service for EverGuard
- * Handles temporary, single-use emergency access keys
+ * Handles temporary, single-use emergency access keys using Firestore
  */
 
 const BURST_KEY_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
 
-// In-memory storage (replace with Firebase in production)
-const burstKeys = new Map();
+// Status enum for burst keys
+const BURST_KEY_STATUS = {
+  ACTIVE: 'active',      // Key is valid and can be used
+  CONSUMED: 'consumed',  // Key has been used
+  EXPIRED: 'expired'     // Key has expired (automatic)
+};
+
 let burstKeyIdCounter = 1;
 
 /**
@@ -25,6 +31,7 @@ async function issueBurstKey(capsuleId, accessorId, accessorPubKey, context) {
   try {
     console.log(`🔑 [BURSTKEY] Issuing BurstKey for capsule: ${capsuleId}`);
     
+    const db = getFirestore();
     const burstKey = generateBurstKey();
     const burstId = `burst_${burstKeyIdCounter++}`;
     const issuedAt = Date.now();
@@ -39,7 +46,8 @@ async function issueBurstKey(capsuleId, accessorId, accessorPubKey, context) {
       accessorPubKey: accessorPubKey || null,
       issuedAt: issuedAt,
       expiresAt: expiresAt,
-      consumed: false,
+      consumed: false, // Keep for backward compatibility
+      status: BURST_KEY_STATUS.ACTIVE, // New status enum
       singleUse: true,
       context: {
         location: context?.location || null,
@@ -49,8 +57,8 @@ async function issueBurstKey(capsuleId, accessorId, accessorPubKey, context) {
       createdAt: new Date().toISOString()
     };
     
-    // Store in memory
-    burstKeys.set(burstKey, burstKeyData);
+    // Store in Firestore (use burstKey as document ID for fast lookups)
+    await db.collection(COLLECTIONS.BURST_KEYS).doc(burstKey).set(burstKeyData);
     
     console.log(`✅ [BURSTKEY] Issued: ${burstId}`);
     console.log(`⏰ [BURSTKEY] Expires at: ${new Date(expiresAt).toISOString()}`);
@@ -75,12 +83,15 @@ async function verifyAndConsumeBurstKey(burstKey, accessorId) {
   try {
     console.log(`🔍 [BURSTKEY] Verifying BurstKey for accessor: ${accessorId}`);
     
-    const burstKeyData = burstKeys.get(burstKey);
+    const db = getFirestore();
+    const doc = await db.collection(COLLECTIONS.BURST_KEYS).doc(burstKey).get();
     
-    if (!burstKeyData) {
+    if (!doc.exists) {
       console.log('❌ [BURSTKEY] Invalid BurstKey');
       return { valid: false, error: 'Invalid BurstKey' };
     }
+    
+    const burstKeyData = doc.data();
     
     // Check if accessor matches
     if (burstKeyData.accessorId !== accessorId) {
@@ -101,8 +112,11 @@ async function verifyAndConsumeBurstKey(burstKey, accessorId) {
     }
     
     // Mark as consumed
-    burstKeyData.consumed = true;
-    burstKeyData.consumedAt = Date.now();
+    await db.collection(COLLECTIONS.BURST_KEYS).doc(burstKey).update({
+      consumed: true, // Keep for backward compatibility
+      status: BURST_KEY_STATUS.CONSUMED,
+      consumedAt: Date.now()
+    });
     
     console.log(`✅ [BURSTKEY] Consumed: ${burstKeyData.burstId}`);
     
@@ -123,35 +137,58 @@ async function verifyAndConsumeBurstKey(burstKey, accessorId) {
  * Get BurstKey details by ID
  */
 async function getBurstKeyById(burstId) {
-  for (const [key, data] of burstKeys.entries()) {
-    if (data.burstId === burstId) {
-      return data;
+  try {
+    const db = getFirestore();
+    const snapshot = await db.collection(COLLECTIONS.BURST_KEYS)
+      .where('burstId', '==', burstId)
+      .limit(1)
+      .get();
+    
+    if (snapshot.empty) {
+      return null;
     }
+    
+    return snapshot.docs[0].data();
+  } catch (error) {
+    console.error('❌ [BURSTKEY] Error getting BurstKey by ID:', error);
+    throw error;
   }
-  return null;
 }
 
 /**
  * Check if BurstKey is valid (not consumed and not expired)
  */
-function isBurstKeyValid(burstKey) {
-  const data = burstKeys.get(burstKey);
-  
-  if (!data) return false;
-  if (data.consumed) return false;
-  if (Date.now() > data.expiresAt) return false;
-  
-  return true;
+async function isBurstKeyValid(burstKey) {
+  try {
+    const db = getFirestore();
+    const doc = await db.collection(COLLECTIONS.BURST_KEYS).doc(burstKey).get();
+    
+    if (!doc.exists) return false;
+    
+    const data = doc.data();
+    if (data.consumed) return false;
+    if (Date.now() > data.expiresAt) return false;
+    
+    return true;
+  } catch (error) {
+    console.error('❌ [BURSTKEY] Error checking validity:', error);
+    return false;
+  }
 }
 
 /**
  * Get all BurstKeys for a capsule (for audit log)
  */
 async function getCapsuleBurstKeys(capsuleId) {
-  const capsuleBurstKeys = [];
-  
-  for (const [key, data] of burstKeys.entries()) {
-    if (data.capsuleId === capsuleId) {
+  try {
+    const db = getFirestore();
+    const snapshot = await db.collection(COLLECTIONS.BURST_KEYS)
+      .where('capsuleId', '==', capsuleId)
+      .get();
+    
+    const capsuleBurstKeys = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
       capsuleBurstKeys.push({
         burstId: data.burstId,
         accessorId: data.accessorId,
@@ -161,10 +198,13 @@ async function getCapsuleBurstKeys(capsuleId) {
         consumedAt: data.consumedAt || null,
         context: data.context
       });
-    }
+    });
+    
+    return capsuleBurstKeys;
+  } catch (error) {
+    console.error('❌ [BURSTKEY] Error getting capsule BurstKeys:', error);
+    throw error;
   }
-  
-  return capsuleBurstKeys;
 }
 
 /**
@@ -172,16 +212,23 @@ async function getCapsuleBurstKeys(capsuleId) {
  */
 async function updateBurstKeyBlockchainId(burstKey, blockchainBurstKeyId) {
   try {
-    const burstKeyData = burstKeys.get(burstKey);
+    const db = getFirestore();
+    const doc = await db.collection(COLLECTIONS.BURST_KEYS).doc(burstKey).get();
     
-    if (!burstKeyData) {
+    if (!doc.exists) {
       throw new Error('BurstKey not found');
     }
     
-    burstKeyData.blockchainBurstKeyId = blockchainBurstKeyId;
+    await db.collection(COLLECTIONS.BURST_KEYS).doc(burstKey).update({
+      blockchainBurstKeyId: blockchainBurstKeyId
+    });
     
+    const burstKeyData = doc.data();
     console.log(`🔗 [BURSTKEY] Updated blockchain ID for ${burstKeyData.burstId}: ${blockchainBurstKeyId}`);
-    return burstKeyData;
+    
+    // Return updated data
+    const updated = await db.collection(COLLECTIONS.BURST_KEYS).doc(burstKey).get();
+    return updated.data();
   } catch (error) {
     console.error('❌ [BURSTKEY] Error updating blockchain ID:', error);
     throw error;
@@ -189,24 +236,132 @@ async function updateBurstKeyBlockchainId(burstKey, blockchainBurstKeyId) {
 }
 
 /**
- * Cleanup expired BurstKeys (optional maintenance)
+ * Get the current status of a BurstKey (handles automatic expiry)
  */
-function cleanupExpiredBurstKeys() {
-  const now = Date.now();
-  let cleaned = 0;
+function getBurstKeyStatus(burstKeyData) {
+  // If already marked as consumed, return consumed
+  if (burstKeyData.status === BURST_KEY_STATUS.CONSUMED || burstKeyData.consumed) {
+    return BURST_KEY_STATUS.CONSUMED;
+  }
   
-  for (const [key, data] of burstKeys.entries()) {
-    if (now > data.expiresAt) {
-      burstKeys.delete(key);
-      cleaned++;
+  // Check if expired
+  if (Date.now() > burstKeyData.expiresAt) {
+    return BURST_KEY_STATUS.EXPIRED;
+  }
+  
+  // Otherwise, it's active
+  return BURST_KEY_STATUS.ACTIVE;
+}
+
+/**
+ * Check if there's an active BurstKey for a specific medic + capsule pair
+ * Returns the active key data if found, null otherwise
+ */
+async function checkActiveBurstKey(medicId, capsuleId) {
+  try {
+    console.log(`🔍 [BURSTKEY] Checking for active key: medic=${medicId}, capsule=${capsuleId}`);
+    
+    const db = getFirestore();
+    const now = Date.now();
+    
+    // Query for keys matching this medic + capsule
+    const snapshot = await db.collection(COLLECTIONS.BURST_KEYS)
+      .where('accessorId', '==', medicId)
+      .where('capsuleId', '==', capsuleId)
+      .get();
+    
+    // Check each key to find an active one
+    for (const doc of snapshot.docs) {
+      const keyData = doc.data();
+      const status = getBurstKeyStatus(keyData);
+      
+      if (status === BURST_KEY_STATUS.ACTIVE) {
+        console.log(`⚠️  [BURSTKEY] Found active key: ${keyData.burstId} (expires at ${new Date(keyData.expiresAt).toISOString()})`);
+        return keyData;
+      }
     }
+    
+    console.log(`✅ [BURSTKEY] No active key found`);
+    return null;
+  } catch (error) {
+    console.error('❌ [BURSTKEY] Error checking active BurstKey:', error);
+    throw error;
   }
-  
-  if (cleaned > 0) {
-    console.log(`🧹 [BURSTKEY] Cleaned up ${cleaned} expired BurstKeys`);
+}
+
+/**
+ * Mark expired BurstKeys with status (instead of deleting)
+ */
+async function markExpiredBurstKeys() {
+  try {
+    const db = getFirestore();
+    const now = Date.now();
+    
+    // Find expired burst keys that are still marked as active
+    const snapshot = await db.collection(COLLECTIONS.BURST_KEYS)
+      .where('expiresAt', '<', now)
+      .where('status', '==', BURST_KEY_STATUS.ACTIVE)
+      .get();
+    
+    if (snapshot.empty) {
+      return 0;
+    }
+    
+    // Update status to expired in batch
+    const batch = db.batch();
+    snapshot.docs.forEach(doc => {
+      batch.update(doc.ref, { status: BURST_KEY_STATUS.EXPIRED });
+    });
+    
+    await batch.commit();
+    const marked = snapshot.size;
+    
+    if (marked > 0) {
+      console.log(`🧹 [BURSTKEY] Marked ${marked} BurstKeys as expired`);
+    }
+    
+    return marked;
+  } catch (error) {
+    console.error('❌ [BURSTKEY] Error marking expired BurstKeys:', error);
+    throw error;
   }
-  
-  return cleaned;
+}
+
+/**
+ * Cleanup expired BurstKeys (optional maintenance - deletes old data)
+ */
+async function cleanupExpiredBurstKeys() {
+  try {
+    const db = getFirestore();
+    const now = Date.now();
+    
+    // Find expired burst keys
+    const snapshot = await db.collection(COLLECTIONS.BURST_KEYS)
+      .where('expiresAt', '<', now)
+      .get();
+    
+    if (snapshot.empty) {
+      return 0;
+    }
+    
+    // Delete expired keys in batch
+    const batch = db.batch();
+    snapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    await batch.commit();
+    const cleaned = snapshot.size;
+    
+    if (cleaned > 0) {
+      console.log(`🧹 [BURSTKEY] Cleaned up ${cleaned} expired BurstKeys`);
+    }
+    
+    return cleaned;
+  } catch (error) {
+    console.error('❌ [BURSTKEY] Error cleaning up expired BurstKeys:', error);
+    throw error;
+  }
 }
 
 module.exports = {
@@ -218,6 +373,11 @@ module.exports = {
   getCapsuleBurstKeys,
   updateBurstKeyBlockchainId,
   cleanupExpiredBurstKeys,
-  BURST_KEY_DURATION
+  // New Phase 1 functions
+  getBurstKeyStatus,
+  checkActiveBurstKey,
+  markExpiredBurstKeys,
+  BURST_KEY_DURATION,
+  BURST_KEY_STATUS
 };
 

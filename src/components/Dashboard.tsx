@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { VaultCard } from "./VaultCard";
+import { CapsuleCreationForm } from "./CapsuleCreationForm";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -13,16 +15,68 @@ import {
   Bot,
   FileCheck,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  LogOut,
+  Settings
 } from "lucide-react";
 
+const API_URL = 'http://localhost:5001';
+
 interface DashboardProps {
-  onCapsuleClick: (capsuleType: string) => void;
+  onCapsuleClick: (capsule: any) => void;
 }
 
 export const Dashboard = ({ onCapsuleClick }: DashboardProps) => {
+  const { user, token, logout } = useAuth();
   const [vaultStatus] = useState<"secure" | "warning">("secure");
+  const [userCapsules, setUserCapsules] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreationForm, setShowCreationForm] = useState(false);
 
+  // Fetch user capsules on mount
+  useEffect(() => {
+    const fetchUserCapsules = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const headers: any = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${API_URL}/api/capsules`, {
+          headers
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setUserCapsules(data.capsules || []);
+          
+          // If no capsules, show creation form
+          if (!data.capsules || data.capsules.length === 0) {
+            setShowCreationForm(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching capsules:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserCapsules();
+  }, [user, token]);
+
+  const handleCapsuleCreated = () => {
+    setShowCreationForm(false);
+    // Refresh capsules
+    window.location.reload();
+  };
+
+  // Demo capsules for non-authenticated users
   const capsules = [
     {
       id: "medical",
@@ -68,6 +122,11 @@ export const Dashboard = ({ onCapsuleClick }: DashboardProps) => {
     }
   ];
 
+  // Show creation form for authenticated users without capsules
+  if (user && showCreationForm) {
+    return <CapsuleCreationForm onSuccess={handleCapsuleCreated} />;
+  }
+
   return (
     <div className="min-h-screen p-6">
       <div className="max-w-7xl mx-auto space-y-8 animate-fade-in">
@@ -75,35 +134,83 @@ export const Dashboard = ({ onCapsuleClick }: DashboardProps) => {
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="font-heading font-bold text-4xl mb-2">Your Vault</h1>
-              <p className="text-muted-foreground">Manage your secure data capsules</p>
+              <h1 className="font-heading font-bold text-4xl mb-2">
+                {user ? `${user.name}'s Vault` : 'Your Vault'}
+              </h1>
+              <p className="text-muted-foreground">
+                {user ? `Welcome back, ${user.name}` : 'Manage your secure data capsules'}
+              </p>
             </div>
             
-            <Badge 
-              variant={vaultStatus === "secure" ? "default" : "destructive"}
-              className="flex items-center gap-2 px-4 py-2 text-sm vault-gradient border-0 text-white"
-            >
-              {vaultStatus === "secure" ? (
-                <>
-                  <CheckCircle2 className="w-4 h-4" />
-                  Secure & Synced
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="w-4 h-4" />
-                  Action Required
-                </>
+            <div className="flex items-center gap-3">
+              {user && (user.role === 'admin') && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.location.href = '/admin'}
+                  className="gap-2"
+                >
+                  <Settings className="w-4 h-4" />
+                  Admin
+                </Button>
               )}
-            </Badge>
+              
+              {user && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={logout}
+                  className="gap-2"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </Button>
+              )}
+              
+              <Badge 
+                variant={vaultStatus === "secure" ? "default" : "destructive"}
+                className="flex items-center gap-2 px-4 py-2 text-sm vault-gradient border-0 text-white"
+              >
+                {vaultStatus === "secure" ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    Secure & Synced
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="w-4 h-4" />
+                    Action Required
+                  </>
+                )}
+              </Badge>
+            </div>
           </div>
         </div>
 
         {/* Capsules Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {capsules.map((capsule, index) => (
+          {/* Show user's real capsules first if they exist */}
+          {user && userCapsules.length > 0 && userCapsules.map((capsule, index) => (
             <div 
               key={capsule.id}
               style={{ animationDelay: `${index * 0.1}s` }}
+              className="animate-fade-in"
+            >
+              <VaultCard
+                title={capsule.metadata?.title || `${capsule.capsuleType} Capsule`}
+                icon={Heart} // Default to medical icon for now
+                gradient="medical-gradient"
+                lastAccess="Just created"
+                onClick={() => onCapsuleClick(capsule)}
+              />
+            </div>
+          ))}
+          
+          {/* Always show demo capsules */}
+          {capsules.map((capsule, index) => (
+            <div 
+              key={capsule.id}
+              style={{ animationDelay: `${(userCapsules.length + index) * 0.1}s` }}
               className="animate-fade-in"
             >
               <VaultCard

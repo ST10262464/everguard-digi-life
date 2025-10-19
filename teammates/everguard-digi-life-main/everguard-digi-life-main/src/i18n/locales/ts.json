@@ -1,0 +1,52 @@
+{
+  "app": {
+    "title": "EverGuard",
+    "subtitle": "Muvhuledzi wa Vhone wa Digital Life"
+  },
+  "dashboard": {
+    "title": "Tshivhambo tsha Vhone",
+    "subtitle": "Layela ma-capsule a vhone a data a nga si na tshingoti",
+    "secure": "Nga tshingoti & Tshumisane",
+    "actionRequired": "Mushumo wo Lavheaho"
+  },
+  "capsules": {
+    "medical": "Capsule ya Vhulapha",
+    "legal": "Mulayo & Will",
+    "financial": "Capsule ya Mafhungo",
+    "education": "Capsule ya Thodisiso",
+    "safety": "Tshingoti & GBV",
+    "legacy": "Capsule ya Fhano"
+  },
+  "ai": {
+    "title": "Guardian AI Console",
+    "subtitle": "Mushumeli wa vhone wa EverGuard wa u dzula ha vhutshilo, tshivhumbulelo, na tshireledzo ya tshifhinga tsha tshohle",
+    "placeholder": "Vhudzisa Guardian nga tshingoti, tshivhumbulelo, kana fhano la vhone la digital...",
+    "processing": "I shumisa nga tshingoti...",
+    "welcomeMessage": "Ndaa, ndi Muvhuledzi wa vhone wa EverGuard — hone u vhulungisa nga tshingoti ha vhone, tshireledzo ya data, u lugisa ha tshifhinga tsha tshohle, na fhano la digital.",
+    "howCanIHelp": "Ndi nga vhulungisa hani namusi?",
+    "suggestions": {
+      "setupEmergency": "Ndi nga lugisa hani Emergency Capsule yanga?",
+      "secureDocuments": "Ndi nga i vhulunga hani will yanga ya digital nga tshingoti?",
+      "digitalWill": "Ndi nga dovha hani uri data yanga ya muthu i dzule nga tshivhumbulelo?"
+    }
+  },
+  "language": {
+    "select": "Nanga Luambo",
+    "english": "English",
+    "afrikaans": "Afrikaans",
+    "zulu": "IsiZulu",
+    "xhosa": "IsiXhosa",
+    "northernSotho": "Sesotho sa Leboa",
+    "tswana": "Setswana",
+    "swati": "SiSwati",
+    "venda": "Tshivenḓa",
+    "tsonga": "Xitsonga",
+    "ndebele": "IsiNdebele"
+  },
+  "emergency": {
+    "ifEmergency": "Arali ndi tshifhinga tsha tshohle, ndi humbela u vhulungana:",
+    "gbvHotline": "GBV Command Centre: 0800 428 428",
+    "police": "Mapholisa: 10111",
+    "medical": "Tshifhinga tsha tshohle tsha Vhulapha: 112"
+  }
+}

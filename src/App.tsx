@@ -12,6 +12,7 @@ import NotFound from "./pages/NotFound";
 import { EmergencyScan } from "./pages/EmergencyScan";
 import Education from "./pages/Education";
 import Safety from "./pages/Safety";
+import Financial from "./pages/Financial";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/education" element={<Education />} />
           <Route path="/safety" element={<Safety />} />
+          <Route path="/financial" element={<Financial />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/admin" element={<Admin />} />

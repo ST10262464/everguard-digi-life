@@ -10,6 +10,8 @@ import Register from "./pages/Register";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import { EmergencyScan } from "./pages/EmergencyScan";
+import Education from "./pages/Education";
+import Safety from "./pages/Safety";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +24,8 @@ const App = () => (
         <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/education" element={<Education />} />
+          <Route path="/safety" element={<Safety />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/admin" element={<Admin />} />

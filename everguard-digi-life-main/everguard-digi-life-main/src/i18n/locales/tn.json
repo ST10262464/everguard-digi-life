@@ -1,0 +1,52 @@
+{
+  "app": {
+    "title": "EverGuard",
+    "subtitle": "Mokgatlhi wa Gago wa Botshelo jwa Digital"
+  },
+  "dashboard": {
+    "title": "Sebaka sa Gago sa Polokego",
+    "subtitle": "Laola dikapsule tša gago tša data tša polokego",
+    "secure": "Polokego & E kopantšwe",
+    "actionRequired": "Tiro e Nyakegago"
+  },
+  "capsules": {
+    "medical": "Kapsule ya Bongaka",
+    "legal": "Molao & Testamente",
+    "financial": "Kapsule ya Ditšhelete",
+    "education": "Kapsule ya Thuto",
+    "safety": "Polokego & GBV",
+    "legacy": "Kapsule ya Lefa"
+  },
+  "ai": {
+    "title": "Console ya Guardian AI",
+    "subtitle": "Mohlahli wa gago wa EverGuard bakeng sa tšwelopele ya botshelo, lefihlo, le tšhireletšo ya tshohle",
+    "placeholder": "Botša Guardian ka polokego, lefihlo, goba lefa la gago la digital...",
+    "processing": "E šomišetša ka polokego...",
+    "welcomeMessage": "Dumela, ke Mohlahli wa gago wa EverGuard — mo go go thuša ka polokego ya gago, tšhireletšo ya data, boitekanelo bja tshohle, le lefa la digital.",
+    "howCanIHelp": "Ke ka go thuša bjang lehono?",
+    "suggestions": {
+      "setupEmergency": "Ke ka lokiša bjang Emergency Capsule ya ka?",
+      "secureDocuments": "Ke ka e boloka kae testamente ya ka ya digital ka polokego?",
+      "digitalWill": "Ke ka netefatša bjang gore data ya ka ya motho e tšwela e le lefihlo?"
+    }
+  },
+  "language": {
+    "select": "Kgetha Polelo",
+    "english": "English",
+    "afrikaans": "Afrikaans",
+    "zulu": "IsiZulu",
+    "xhosa": "IsiXhosa",
+    "northernSotho": "Sesotho sa Leboa",
+    "tswana": "Setswana",
+    "swati": "SiSwati",
+    "venda": "Tshivenḓa",
+    "tsonga": "Xitsonga",
+    "ndebele": "IsiNdebele"
+  },
+  "emergency": {
+    "ifEmergency": "Ge e le tshohle, hle ikgokaganye:",
+    "gbvHotline": "GBV Command Centre: 0800 428 428",
+    "police": "Maphodisa: 10111",
+    "medical": "Tshohle ya Bongaka: 112"
+  }
+}

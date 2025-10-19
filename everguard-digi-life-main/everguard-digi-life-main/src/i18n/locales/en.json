@@ -1,0 +1,52 @@
+{
+  "app": {
+    "title": "EverGuard",
+    "subtitle": "Your Digital Life Guardian"
+  },
+  "dashboard": {
+    "title": "Your Vault",
+    "subtitle": "Manage your secure data capsules",
+    "secure": "Secure & Synced",
+    "actionRequired": "Action Required"
+  },
+  "capsules": {
+    "medical": "Medical Capsule",
+    "legal": "Legal & Will",
+    "financial": "Financial Capsule",
+    "education": "Education Capsule",
+    "safety": "Safety & GBV",
+    "legacy": "Legacy Capsule"
+  },
+  "ai": {
+    "title": "Guardian AI Console",
+    "subtitle": "Your EverGuard Assistant for life continuity, privacy, and emergency protection",
+    "placeholder": "Ask the Guardian about safety, privacy, or your digital legacy...",
+    "processing": "Processing securely...",
+    "welcomeMessage": "Hello, I'm your EverGuard Guardian Assistant — here to help you manage your safety, data protection, emergency preparedness, and digital legacy.",
+    "howCanIHelp": "How can I assist you today?",
+    "suggestions": {
+      "setupEmergency": "How do I set up my Emergency Capsule?",
+      "secureDocuments": "Where can I store my digital will securely?",
+      "digitalWill": "How can I make sure my personal data stays private?"
+    }
+  },
+  "language": {
+    "select": "Select Language",
+    "english": "English",
+    "afrikaans": "Afrikaans",
+    "zulu": "IsiZulu",
+    "xhosa": "IsiXhosa",
+    "northernSotho": "Sesotho sa Leboa",
+    "tswana": "Setswana",
+    "swati": "SiSwati",
+    "venda": "Tshivenḓa",
+    "tsonga": "Xitsonga",
+    "ndebele": "IsiNdebele"
+  },
+  "emergency": {
+    "ifEmergency": "If this is an emergency, please contact:",
+    "gbvHotline": "GBV Command Centre: 0800 428 428",
+    "police": "Police: 10111",
+    "medical": "Medical Emergency: 112"
+  }
+}

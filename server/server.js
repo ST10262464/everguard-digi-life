@@ -58,10 +58,27 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const { authenticateToken, optionalAuth } = require('./middleware/auth');
+const axios = require('axios');
 
 // Mount routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+// Minimal AI chat endpoint (proxy or stub)
+app.post('/api/ai/chat/enhanced', async (req, res) => {
+  try {
+    const { message } = req.body || {};
+    if (!message) {
+      return res.status(400).json({ success: false, error: 'Missing field: message' });
+    }
+    // Stub response for now; integrate real LLM later
+    const suggestions = ['Ask another question', 'Learn about security', 'Get emergency help'];
+    const canned = `Here to help. You asked: "${message}". For emergencies, use the PulseKey feature. Your data is protected with encryption and on-chain audit logs.`;
+    return res.json({ success: true, response: canned, suggestions });
+  } catch (error) {
+    console.error('❌ [AI] Error:', error.message);
+    return res.status(500).json({ success: false, error: 'AI service unavailable' });
+  }
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {

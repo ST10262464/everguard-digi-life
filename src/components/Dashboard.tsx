@@ -206,13 +206,31 @@ export const Dashboard = ({ onCapsuleClick }: DashboardProps) => {
               style={{ animationDelay: `${(userCapsules.length + index) * 0.1}s` }}
               className="animate-fade-in"
             >
-              <VaultCard
-                title={capsule.title}
-                icon={capsule.icon}
-                gradient={capsule.gradient}
-                lastAccess={capsule.lastAccess}
-                onClick={() => onCapsuleClick(capsule.id)}
-              />
+              {['education','safety','financial'].includes(capsule.id) ? (
+                <a
+                  href={
+                    capsule.id === 'education' ? '/education' :
+                    capsule.id === 'safety' ? '/safety' :
+                    capsule.id === 'financial' ? '/financial' : '#'
+                  }
+                >
+                  <VaultCard
+                    title={capsule.title}
+                    icon={capsule.icon}
+                    gradient={capsule.gradient}
+                    lastAccess={capsule.lastAccess}
+                    onClick={() => onCapsuleClick(capsule.id)}
+                  />
+                </a>
+              ) : (
+                <VaultCard
+                  title={capsule.title}
+                  icon={capsule.icon}
+                  gradient={capsule.gradient}
+                  lastAccess={capsule.lastAccess}
+                  onClick={() => onCapsuleClick(capsule.id)}
+                />
+              )}
             </div>
           ))}
         </div>
@@ -233,16 +251,18 @@ export const Dashboard = ({ onCapsuleClick }: DashboardProps) => {
               </div>
             </Button>
 
-            <Button 
-              variant="outline" 
-              className="justify-start h-auto py-4 px-6 hover:bg-muted transition-smooth"
-            >
-              <Bot className="w-5 h-5 mr-3 text-primary" />
-              <div className="text-left">
-                <div className="font-semibold">AI Guardian</div>
-                <div className="text-xs text-muted-foreground">Get assistance</div>
-              </div>
-            </Button>
+            <a href="/ai">
+              <Button 
+                variant="outline" 
+                className="justify-start h-auto py-4 px-6 hover:bg-muted transition-smooth"
+              >
+                <Bot className="w-5 h-5 mr-3 text-primary" />
+                <div className="text-left">
+                  <div className="font-semibold">AI Guardian</div>
+                  <div className="text-xs text-muted-foreground">Get assistance</div>
+                </div>
+              </Button>
+            </a>
 
             <Button 
               variant="outline" 

@@ -13,6 +13,8 @@ import { EmergencyScan } from "./pages/EmergencyScan";
 import Education from "./pages/Education";
 import Safety from "./pages/Safety";
 import Financial from "./pages/Financial";
+import Legal from "./pages/Legal";
+import AIPage from "./pages/AI";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +30,8 @@ const App = () => (
           <Route path="/education" element={<Education />} />
           <Route path="/safety" element={<Safety />} />
           <Route path="/financial" element={<Financial />} />
+          <Route path="/legal" element={<Legal />} />
+          <Route path="/ai" element={<AIPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/admin" element={<Admin />} />

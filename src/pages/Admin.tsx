@@ -17,8 +17,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 
-const API_URL = 'http://localhost:5001';
-const BLOCKDAG_EXPLORER = 'https://explorer.awakening.bdagscan.io';
+import { API_URL, BLOCKDAG_EXPLORER } from '@/config/api';
 
 interface AdminStats {
   users: { total: number; patients: number; medics: number };
@@ -298,15 +297,9 @@ export default function Admin() {
                           </td>
                           <td className="p-2">
                             {capsule.blockchainId ? (
-                              <a
-                                href={`${BLOCKDAG_EXPLORER}/tx/${capsule.blockchainId}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:underline flex items-center gap-1"
-                              >
+                              <span className="font-mono text-xs text-muted-foreground">
                                 #{capsule.blockchainId}
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
+                              </span>
                             ) : (
                               <span className="text-muted-foreground">Pending...</span>
                             )}
@@ -453,7 +446,7 @@ export default function Admin() {
                   </Card>
                   <Card className="p-4">
                     <div className="text-2xl font-bold text-orange-600">
-                      {transactions.filter(tx => tx.source === 'queue').length}
+                      {transactions.filter(tx => tx.source === 'queue' && tx.status === 'pending').length}
                     </div>
                     <div className="text-sm text-muted-foreground">Pending Queue</div>
                   </Card>

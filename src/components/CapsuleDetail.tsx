@@ -76,7 +76,7 @@ interface CapsuleDetailProps {
   onBack: () => void;
 }
 
-const API_URL = "http://localhost:5001";
+import { API_URL } from '@/config/api';
 
 export const CapsuleDetail = ({ capsule, onBack }: CapsuleDetailProps) => {
   const { token } = useAuth();

@@ -20,7 +20,7 @@ import {
   Settings
 } from "lucide-react";
 
-const API_URL = 'http://localhost:5001';
+import { API_URL } from '@/config/api';
 
 interface DashboardProps {
   onCapsuleClick: (capsule: any) => void;
@@ -82,36 +82,31 @@ export const Dashboard = ({ onCapsuleClick }: DashboardProps) => {
       id: "legal",
       title: "Legal & Will",
       icon: Scale,
-      gradient: "legal-gradient",
-      lastAccess: "3 days ago"
+      gradient: "legal-gradient"
     },
     {
       id: "financial",
       title: "Financial",
       icon: Wallet,
-      gradient: "financial-gradient",
-      lastAccess: "1 day ago"
+      gradient: "financial-gradient"
     },
     {
       id: "education",
       title: "Education",
       icon: GraduationCap,
-      gradient: "medical-gradient",
-      lastAccess: "5 days ago"
+      gradient: "medical-gradient"
     },
     {
       id: "safety",
       title: "Safety & GBV",
       icon: Shield,
-      gradient: "emergency-gradient",
-      lastAccess: "Never"
+      gradient: "emergency-gradient"
     },
     {
       id: "legacy",
       title: "Legacy",
       icon: HeartLegacy,
-      gradient: "legal-gradient",
-      lastAccess: "1 week ago"
+      gradient: "legal-gradient"
     }
   ];
 
@@ -193,7 +188,6 @@ export const Dashboard = ({ onCapsuleClick }: DashboardProps) => {
                 title={capsule.metadata?.title || `${capsule.capsuleType} Capsule`}
                 icon={Heart} // Default to medical icon for now
                 gradient="medical-gradient"
-                lastAccess="Just created"
                 onClick={() => onCapsuleClick(capsule)}
               />
             </div>
@@ -207,27 +201,25 @@ export const Dashboard = ({ onCapsuleClick }: DashboardProps) => {
               className="animate-fade-in"
             >
               {['education','safety','financial'].includes(capsule.id) ? (
-                <a
-                  href={
-                    capsule.id === 'education' ? '/education' :
-                    capsule.id === 'safety' ? '/safety' :
-                    capsule.id === 'financial' ? '/financial' : '#'
-                  }
-                >
-                  <VaultCard
-                    title={capsule.title}
-                    icon={capsule.icon}
-                    gradient={capsule.gradient}
-                    lastAccess={capsule.lastAccess}
-                    onClick={() => onCapsuleClick(capsule.id)}
-                  />
-                </a>
+                <VaultCard
+                  title={capsule.title}
+                  icon={capsule.icon}
+                  gradient={capsule.gradient}
+                  onClick={() => {
+                    if (capsule.id === 'education') {
+                      window.location.href = '/education';
+                    } else if (capsule.id === 'safety') {
+                      window.location.href = '/safety';
+                    } else if (capsule.id === 'financial') {
+                      window.location.href = '/financial';
+                    }
+                  }}
+                />
               ) : (
                 <VaultCard
                   title={capsule.title}
                   icon={capsule.icon}
                   gradient={capsule.gradient}
-                  lastAccess={capsule.lastAccess}
                   onClick={() => onCapsuleClick(capsule.id)}
                 />
               )}
@@ -288,21 +280,6 @@ export const Dashboard = ({ onCapsuleClick }: DashboardProps) => {
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-4">
-          <div className="p-6 bg-card rounded-2xl border border-border">
-            <div className="text-3xl font-bold text-primary mb-1">0</div>
-            <div className="text-sm text-muted-foreground">Security Breaches</div>
-          </div>
-          <div className="p-6 bg-card rounded-2xl border border-border">
-            <div className="text-3xl font-bold text-primary mb-1">24</div>
-            <div className="text-sm text-muted-foreground">Verified Access Events</div>
-          </div>
-          <div className="p-6 bg-card rounded-2xl border border-border">
-            <div className="text-3xl font-bold text-primary mb-1">2h</div>
-            <div className="text-sm text-muted-foreground">Last Sync</div>
-          </div>
-        </div>
       </div>
     </div>
   );

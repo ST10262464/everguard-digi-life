@@ -39,8 +39,18 @@ export const Welcome = ({ onGetStarted, showAuth = false }: WelcomeProps) => {
 
         {/* Heading */}
         <div className="space-y-4">
-          <h1 className="font-heading font-bold text-5xl md:text-7xl text-foreground">
-            Ever<span className="vault-gradient bg-clip-text text-transparent">Guard</span>
+          <h1 className="font-heading font-bold text-5xl md:text-7xl">
+            <span className="text-foreground">Ever</span>
+            <span 
+              className="vault-gradient bg-clip-text text-transparent inline-block"
+              style={{ 
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}
+            >
+              Guard
+            </span>
           </h1>
           <p className="text-2xl md:text-3xl text-muted-foreground font-medium">
             Your world. Your data. Your control.

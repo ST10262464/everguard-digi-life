@@ -334,39 +334,67 @@ async function getAllBlockchainTransactions() {
     const consumedEvents = await contract.queryFilter(consumedFilter);
     
     // Combine and format all events
-    const allEvents = [
-      ...capsuleEvents.map(event => ({
+    // Fetch actual block timestamps from BlockDAG
+    const allEvents = [];
+    
+    // Helper function to get block timestamp
+    const getBlockTimestamp = async (blockNumber) => {
+      try {
+        const block = await provider.getBlock(blockNumber);
+        // BlockDAG timestamps are in seconds, convert to milliseconds
+        return new Date(block.timestamp * 1000).toISOString();
+      } catch (error) {
+        console.warn(`⚠️  [BLOCKCHAIN] Failed to get block ${blockNumber} timestamp:`, error.message);
+        // Fallback to current time if block fetch fails
+        return new Date().toISOString();
+      }
+    };
+    
+    // Process capsule events
+    for (const event of capsuleEvents) {
+      const timestamp = await getBlockTimestamp(event.blockNumber);
+      allEvents.push({
         type: 'CapsuleCreated',
         txHash: event.transactionHash,
         blockNumber: event.blockNumber,
-        timestamp: new Date().toISOString(), // Note: BlockDAG doesn't provide block timestamps
+        timestamp: timestamp,
         capsuleId: event.args.id.toString(),
         capsuleHash: event.args.capsuleHash,
         capsuleType: event.args.capsuleType,
         owner: event.args.owner,
         event: event
-      })),
-      ...burstKeyEvents.map(event => ({
+      });
+    }
+    
+    // Process burst key events
+    for (const event of burstKeyEvents) {
+      const timestamp = await getBlockTimestamp(event.blockNumber);
+      allEvents.push({
         type: 'BurstKeyIssued',
         txHash: event.transactionHash,
         blockNumber: event.blockNumber,
-        timestamp: new Date().toISOString(),
+        timestamp: timestamp,
         burstId: event.args.burstId.toString(),
         capsuleId: event.args.capsuleId.toString(),
         accessor: event.args.accessor,
         expiresAt: event.args.expiresAt.toString(),
         contextHash: event.args.contextHash,
         event: event
-      })),
-      ...consumedEvents.map(event => ({
+      });
+    }
+    
+    // Process consumed events
+    for (const event of consumedEvents) {
+      const timestamp = await getBlockTimestamp(event.blockNumber);
+      allEvents.push({
         type: 'BurstKeyConsumed',
         txHash: event.transactionHash,
         blockNumber: event.blockNumber,
-        timestamp: new Date().toISOString(),
+        timestamp: timestamp,
         burstId: event.args.burstId.toString(),
         event: event
-      }))
-    ];
+      });
+    }
     
     // Sort by block number (newest first)
     allEvents.sort((a, b) => b.blockNumber - a.blockNumber);

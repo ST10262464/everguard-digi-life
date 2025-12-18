@@ -38,7 +38,7 @@ interface EmergencyData {
   conditions: string[];
 }
 
-const API_URL = "http://localhost:5001";
+import { API_URL } from '@/config/api';
 
 export const EmergencyAccess = ({ onBack, capsuleId = "cap_1", currentUser }: EmergencyAccessProps) => {
   const [timeLeft, setTimeLeft] = useState(900); // 15 minutes in seconds

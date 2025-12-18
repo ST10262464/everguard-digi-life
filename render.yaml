@@ -1,0 +1,23 @@
+# Render Configuration for Backend
+services:
+  - type: web
+    name: everguard-api
+    env: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5001
+      - key: BDAG_RPC_URL
+        value: https://rpc.awakening.bdagscan.com
+      - key: CONTRACT_ADDRESS
+        value: 0xb88110dFc4EF51C70bDD7DC6f1e26549EF74c08c
+      # Add these via Render dashboard:
+      # PRIVATE_KEY (secret)
+      # ENCRYPTION_KEY (secret)
+      # FIREBASE_PROJECT_ID
+      # FIREBASE_SERVICE_ACCOUNT_PATH
+      # ALLOWED_ORIGINS

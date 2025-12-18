@@ -237,7 +237,7 @@ router.get('/transactions', async (req, res) => {
           accessor: event.accessor,
           owner: event.owner
         },
-        createdAt: new Date(event.timestamp).getTime()
+        createdAt: event.timestamp // Already an ISO string, use directly
       }))
     ];
     

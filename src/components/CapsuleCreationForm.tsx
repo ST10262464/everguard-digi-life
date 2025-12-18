@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { EmergencyFieldsHelper } from '@/components/EmergencyFieldsHelper';
 import { Shield, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 
-const API_URL = 'http://localhost:5001';
+import { API_URL } from '@/config/api';
 
 interface CapsuleCreationFormProps {
   onSuccess: () => void;
@@ -248,7 +248,7 @@ export function CapsuleCreationForm({ onSuccess }: CapsuleCreationFormProps) {
                     <Input
                       id="emergencyContactPhone"
                       type="tel"
-                      placeholder="+1 (555) 123-4567"
+                      placeholder="+27 82 123 4567"
                       value={formData.emergencyContactPhone}
                       onChange={(e) => setFormData({ ...formData, emergencyContactPhone: e.target.value })}
                       required

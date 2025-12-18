@@ -53,8 +53,9 @@ function updateTransactionStatus(txId, status, result = null) {
   if (status === 'confirmed' || status === 'failed') {
     console.log(`${status === 'confirmed' ? '✅' : '❌'} [QUEUE] Transaction ${status}: ${txId}`);
     
-    // Keep completed transactions for audit trail
-    tx.completedAt = Date.now();
+    // Remove confirmed/failed transactions from queue immediately since they're on blockchain
+    // They don't need to stay in the queue anymore
+    pendingTransactions.delete(txId);
   }
   
   return tx;
@@ -148,6 +149,8 @@ function getQueueStats() {
     else if (tx.status === 'confirmed') confirmed++;
     else if (tx.status === 'failed') failed++;
   }
+  
+  // Note: No need for cleanup since confirmed/failed transactions are removed immediately
   
   return {
     total: pendingTransactions.size,

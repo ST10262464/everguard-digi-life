@@ -272,21 +272,21 @@ async function getChatResponse(message, sessionId = 'default', conversationHisto
     let chat = chatSessions.get(sessionId);
     
     if (!chat) {
-      // Create new chat session with system context
+      // Create new chat session with system context embedded in history
       chat = model.startChat({
         history: [
           {
             role: "user",
-            parts: [{ text: "You are the Guardian AI for EverGuard. Please introduce yourself briefly." }]
+            parts: [{ text: `You are the Guardian AI for EverGuard. Here's your complete context and instructions:\n\n${EVERGUARD_CONTEXT}\n\nRemember these instructions for our entire conversation. Now, please introduce yourself warmly.` }]
           },
           {
             role: "model",
-            parts: [{ text: "I'm the Guardian AI, here to help you understand and navigate EverGuard's secure health data platform. I can explain how to store your medical records in encrypted capsules, use the PulseKey emergency access system, and leverage blockchain verification for transparency. What would you like to know?" }]
+            parts: [{ text: "Hey there! I'm the Guardian AI for EverGuard - think of me as your friendly guide to keeping your health data secure and accessible. I'm here to help you understand how to create encrypted capsules, use emergency access features, and stay in control of your medical information. What would you like to know?" }]
           }
         ],
         generationConfig: {
           maxOutputTokens: 500,
-          temperature: 0.7,
+          temperature: 0.8,
         },
       });
       
@@ -299,11 +299,9 @@ async function getChatResponse(message, sessionId = 'default', conversationHisto
       }
     }
     
-    // Add conversation context to the message
-    const contextualMessage = `${EVERGUARD_CONTEXT}\n\nUser Message: ${message}\n\nRespond warmly and naturally. Remember context from earlier (names, locations). Include clickable links [text](/url) for features. If off-topic: engage briefly with empathy, then redirect. Show enthusiasm and personality. Keep concise (2-3 paragraphs). End with an engaging question.`;
-    
-    // Send message and get response
-    const result = await chat.sendMessage(contextualMessage);
+    // Send user message directly (context already in chat history)
+    // The model already has EVERGUARD_CONTEXT from initialization
+    const result = await chat.sendMessage(message);
     let aiResponse = result.response.text();
     
     // Remove markdown formatting (asterisks, etc.)

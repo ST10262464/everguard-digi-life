@@ -216,8 +216,20 @@ router.get('/transactions', async (req, res) => {
     // Get historical transactions from Firestore
     const firestoreTransactions = await getHistoricalTransactions(200);
     
-    // Get blockchain events (this will scan recent blocks)
-    const blockchainEvents = await getAllBlockchainTransactions();
+    // Get blockchain events with timeout (don't block the response)
+    let blockchainEvents = [];
+    try {
+      // Set a 5-second timeout for blockchain scanning
+      const blockchainPromise = getAllBlockchainTransactions();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Blockchain scan timeout')), 5000)
+      );
+      
+      blockchainEvents = await Promise.race([blockchainPromise, timeoutPromise]);
+    } catch (scanError) {
+      console.warn('⚠️  [ADMIN] Blockchain scan timed out or failed, using Firestore data only:', scanError.message);
+      // Continue with Firestore data only
+    }
     
     // Map to track unique transactions by txHash
     const transactionMap = new Map();
@@ -362,6 +374,81 @@ router.get('/stats', async (req, res) => {
     });
   } catch (error) {
     console.error('❌ [ADMIN] Error fetching stats:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/admin/sync-blockchain
+ * Trigger a background sync of historical blockchain transactions to Firestore
+ */
+router.post('/sync-blockchain', async (req, res) => {
+  try {
+    // Return immediately and run sync in background
+    res.json({
+      success: true,
+      message: 'Blockchain sync started in background. This may take 10-30 minutes. Check logs for progress.'
+    });
+    
+    // Run sync in background (non-blocking)
+    setImmediate(async () => {
+      try {
+        console.log('🔄 [ADMIN] Starting background blockchain sync...');
+        console.log('📊 [ADMIN] This will scan blocks and save historical transactions to Firestore');
+        
+        const db = getFirestore();
+        
+        // Do a deep scan (not quick)
+        const events = await getAllBlockchainTransactions(false);
+        
+        console.log(`✅ [ADMIN] Blockchain scan complete. Found ${events.length} events`);
+        
+        // Save all events to Firestore
+        let saved = 0;
+        for (const event of events) {
+          try {
+            const txData = {
+              txId: event.txHash,
+              type: event.type,
+              txHash: event.txHash,
+              status: 'confirmed',
+              metadata: {
+                capsuleId: event.capsuleId,
+                burstId: event.burstId,
+                accessor: event.accessor,
+                owner: event.owner,
+                blockNumber: event.blockNumber
+              },
+              result: {},
+              createdAt: event.timestamp,
+              completedAt: event.timestamp,
+              source: 'blockchain_sync'
+            };
+            
+            // Check if already exists
+            const existing = await db.collection(COLLECTIONS.TRANSACTIONS).doc(event.txHash).get();
+            if (!existing.exists) {
+              await db.collection(COLLECTIONS.TRANSACTIONS).doc(event.txHash).set(txData);
+              saved++;
+            }
+          } catch (saveError) {
+            console.warn(`⚠️  [ADMIN] Failed to save transaction ${event.txHash}:`, saveError.message);
+          }
+        }
+        
+        console.log(`✅ [ADMIN] Background sync complete. Saved ${saved} new transactions to Firestore`);
+        console.log('💡 [ADMIN] Historical transactions now available in admin panel');
+        
+      } catch (syncError) {
+        console.error('❌ [ADMIN] Background sync failed:', syncError.message);
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ [ADMIN] Error starting sync:', error);
     res.status(500).json({
       success: false,
       error: error.message

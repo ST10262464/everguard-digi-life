@@ -68,9 +68,12 @@ app.use('/api/admin', adminRoutes);
 // EverGuard Guardian AI chat endpoint
 app.post('/api/ai/chat/enhanced', async (req, res) => {
   try {
+    console.log('🤖 [AI] Received chat request');
+    
     const { message, sessionId } = req.body || {};
     
     if (!message) {
+      console.log('❌ [AI] No message provided');
       return res.status(400).json({ 
         success: false, 
         error: 'Missing field: message' 
@@ -80,10 +83,12 @@ app.post('/api/ai/chat/enhanced', async (req, res) => {
     // Use sessionId from client, or generate one based on IP (for anonymous users)
     const chatSessionId = sessionId || req.ip || 'default';
     
-    console.log('🤖 [AI] Processing message for session:', chatSessionId.substring(0, 10) + '...');
+    console.log('🤖 [AI] Processing message:', message.substring(0, 50) + '... (session:', chatSessionId.substring(0, 10) + '...)');
     
     // Get AI response from Gemini service with conversation context
     const aiResult = await getChatResponse(message, chatSessionId);
+    
+    console.log('✅ [AI] Response generated successfully');
     
     return res.json({ 
       success: true, 
@@ -93,7 +98,8 @@ app.post('/api/ai/chat/enhanced', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ [AI] Error:', error.message);
+    console.error('❌ [AI] Error in endpoint:', error.message);
+    console.error('Stack:', error.stack);
     
     // Return helpful fallback
     return res.status(500).json({ 

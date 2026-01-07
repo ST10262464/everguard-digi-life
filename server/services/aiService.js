@@ -1,4 +1,12 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+let GoogleGenerativeAI;
+try {
+  const geminiModule = require('@google/generative-ai');
+  GoogleGenerativeAI = geminiModule.GoogleGenerativeAI;
+  console.log('✅ [AI] @google/generative-ai package loaded');
+} catch (error) {
+  console.error('❌ [AI] Failed to load @google/generative-ai package:', error.message);
+  console.error('⚠️  [AI] Run: cd server && npm install');
+}
 
 /**
  * EverGuard Guardian AI Service
@@ -14,6 +22,11 @@ let chatSessions = new Map(); // Store chat sessions by user/session ID
  * Initialize Gemini AI
  */
 function initializeAI() {
+  if (!GoogleGenerativeAI) {
+    console.warn('⚠️  [AI] @google/generative-ai package not available - AI service will use fallback responses');
+    return false;
+  }
+  
   const apiKey = process.env.GEMINI_API_KEY;
   
   if (!apiKey) {
@@ -28,6 +41,7 @@ function initializeAI() {
     return true;
   } catch (error) {
     console.error('❌ [AI] Failed to initialize Gemini:', error.message);
+    console.error('Stack:', error.stack);
     return false;
   }
 }

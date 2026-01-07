@@ -348,7 +348,7 @@ async function getTransactionsFromExplorer() {
  * Get all blockchain transactions from contract events
  * First tries explorer API, falls back to block scanning if needed
  */
-async function getAllBlockchainTransactions() {
+async function getAllBlockchainTransactions(quickScan = true) {
   try {
     if (!contract) {
       throw new Error('Contract not initialized');
@@ -362,6 +362,7 @@ async function getAllBlockchainTransactions() {
     
     // Fallback to block scanning
     console.log('🔍 [BLOCKCHAIN] Using block scanning method...');
+    console.log(`📊 [BLOCKCHAIN] Quick scan mode: ${quickScan}`);
     
     const allEvents = [];
     const contractAddress = process.env.CONTRACT_ADDRESS.toLowerCase();
@@ -370,24 +371,30 @@ async function getAllBlockchainTransactions() {
     const currentBlock = await provider.getBlockNumber();
     console.log(`📊 [BLOCKCHAIN] Current block: ${currentBlock}`);
     
-    // Scan blocks based on environment variable or default to 1,000,000 blocks
-    // 1,000,000 blocks = ~115 days with 10s blocks (covers since October)
-    // Configure BLOCKCHAIN_SCAN_BLOCKS env var for different ranges
-    const blocksToScan = parseInt(process.env.BLOCKCHAIN_SCAN_BLOCKS || '1000000');
+    // Scan fewer blocks to avoid overwhelming RPC and timing out
+    // Start with recent blocks - most important transactions are recent
+    // This will complete fast, then we can backfill historical data separately
+    let blocksToScan;
+    if (quickScan) {
+      blocksToScan = parseInt(process.env.BLOCKCHAIN_SCAN_BLOCKS || '5000'); // Quick scan: 5k blocks
+    } else {
+      blocksToScan = 100000; // Deep scan: 100k blocks (~11 days)
+    }
     const startBlock = Math.max(0, currentBlock - blocksToScan);
     
     console.log(`🔍 [BLOCKCHAIN] Scanning blocks ${startBlock} to ${currentBlock} (${blocksToScan.toLocaleString()} blocks)...`);
     console.log(`📅 [BLOCKCHAIN] This covers approximately ${Math.round(blocksToScan * 10 / 86400)} days of history`);
     
-    // Batch process blocks in chunks to avoid overwhelming the RPC
-    const batchSize = 100;
+    // Batch process blocks in smaller chunks with delays to avoid rate limiting
+    const batchSize = 10; // Reduced from 100 to avoid 502 errors
     let processedBlocks = 0;
+    const maxBlocks = 1000; // Stop after 1000 blocks to keep response time reasonable
     
-    for (let i = startBlock; i <= currentBlock; i += batchSize) {
+    for (let i = startBlock; i <= currentBlock && processedBlocks < maxBlocks; i += batchSize) {
       const endBlock = Math.min(i + batchSize - 1, currentBlock);
       
       // Process each block in the batch
-      for (let blockNum = i; blockNum <= endBlock; blockNum++) {
+      for (let blockNum = i; blockNum <= endBlock && processedBlocks < maxBlocks; blockNum++) {
         try {
           // Get block with transactions
           const block = await provider.getBlock(blockNum, true);
@@ -479,8 +486,8 @@ async function getAllBlockchainTransactions() {
         }
       }
       
-      // Small delay between batches to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Longer delay between batches to avoid 502 errors
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
     
     // Sort by block number (newest first)

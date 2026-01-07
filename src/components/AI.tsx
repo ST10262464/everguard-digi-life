@@ -21,6 +21,7 @@ import {
   CheckCircle2
 } from "lucide-react";
 import axios from 'axios';
+import { API_URL } from '@/config/api';
 
 /**
  * EverGuard Guardian AI Console
@@ -91,7 +92,7 @@ ${t('ai.howCanIHelp')}`,
     setError('');
 
     try {
-      const response = await axios.post('/api/ai/chat/enhanced', {
+      const response = await axios.post(`${API_URL}/api/ai/chat/enhanced`, {
         message: inputMessage
       });
 

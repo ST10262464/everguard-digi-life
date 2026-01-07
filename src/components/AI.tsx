@@ -33,18 +33,21 @@ const EverGuardGuardianPage = () => {
   const [messages, setMessages] = useState([
     {
       id: 1,
-      text: `${t('ai.welcomeMessage')}
-${t('emergency.ifEmergency')}:
-• ${t('emergency.gbvHotline')}
-• ${t('emergency.police')}
-• ${t('emergency.medical')}
-${t('ai.howCanIHelp')}`,
+      text: `Hello! I'm your EverGuard Guardian Assistant - your guide to securing and managing your health data.
+
+I can help you understand:
+- How to create and manage encrypted capsules
+- PulseKey emergency access system  
+- ICE (In Case of Emergency) data
+- Blockchain verification and security
+
+What would you like to know?`,
       sender: 'bot',
       timestamp: new Date(),
       suggestions: [
-        t('ai.suggestions.setupEmergency'),
-        t('ai.suggestions.secureDocuments'),
-        t('ai.suggestions.digitalWill')
+        'How do I create a secure capsule?',
+        'What is PulseKey emergency access?',
+        'How is my data protected?'
       ]
     }
   ]);

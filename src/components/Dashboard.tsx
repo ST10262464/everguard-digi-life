@@ -227,56 +227,34 @@ export const Dashboard = ({ onCapsuleClick }: DashboardProps) => {
           ))}
         </div>
 
-        {/* Quick Actions */}
+        {/* Quick Actions - Core EverGuard Features */}
         <div className="pt-8 border-t border-border">
           <h2 className="font-heading font-semibold text-xl mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
             <Button 
               variant="outline" 
-              className="justify-start h-auto py-4 px-6 hover:bg-muted transition-smooth"
+              className="justify-start h-auto py-6 px-8 hover:bg-accent hover:text-accent-foreground transition-all border-2"
               onClick={() => onCapsuleClick("emergency")}
             >
-              <AlertCircle className="w-5 h-5 mr-3 text-accent" />
+              <AlertCircle className="w-6 h-6 mr-4 text-accent flex-shrink-0" />
               <div className="text-left">
-                <div className="font-semibold">Emergency Access</div>
-                <div className="text-xs text-muted-foreground">Quick medical info</div>
+                <div className="font-bold text-base">Emergency Access</div>
+                <div className="text-sm text-muted-foreground">Request or grant PulseKey access</div>
               </div>
             </Button>
 
-            <a href="/ai">
+            <a href="/ai" className="block">
               <Button 
                 variant="outline" 
-                className="justify-start h-auto py-4 px-6 hover:bg-muted transition-smooth"
+                className="w-full justify-start h-auto py-6 px-8 hover:bg-primary hover:text-primary-foreground transition-all border-2"
               >
-                <Bot className="w-5 h-5 mr-3 text-primary" />
+                <Bot className="w-6 h-6 mr-4 text-primary flex-shrink-0" />
                 <div className="text-left">
-                  <div className="font-semibold">AI Guardian</div>
-                  <div className="text-xs text-muted-foreground">Get assistance</div>
+                  <div className="font-bold text-base">AI Guardian</div>
+                  <div className="text-sm text-muted-foreground">Get help with EverGuard features</div>
                 </div>
               </Button>
             </a>
-
-            <Button 
-              variant="outline" 
-              className="justify-start h-auto py-4 px-6 hover:bg-muted transition-smooth"
-            >
-              <MapPin className="w-5 h-5 mr-3 text-secondary" />
-              <div className="text-left">
-                <div className="font-semibold">Aid Map</div>
-                <div className="text-xs text-muted-foreground">Find nearby help</div>
-              </div>
-            </Button>
-
-            <Button 
-              variant="outline" 
-              className="justify-start h-auto py-4 px-6 hover:bg-muted transition-smooth"
-            >
-              <FileCheck className="w-5 h-5 mr-3 text-primary" />
-              <div className="text-left">
-                <div className="font-semibold">Compliance</div>
-                <div className="text-xs text-muted-foreground">View access logs</div>
-              </div>
-            </Button>
           </div>
         </div>
 

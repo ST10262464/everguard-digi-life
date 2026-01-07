@@ -55,16 +55,12 @@ ${t('ai.howCanIHelp')}`,
   const { toast } = useToast();
 
   const quickQuestions = [
-    'How do I create a secure data vault?',
-    'What is an Emergency Capsule?',
-    'How do I store my ID documents safely?',
-    'How can I set up digital will sharing?',
-    'What are the GBV emergency contacts?',
-    'How do I protect my personal data online?',
-    'Can EverGuard notify my emergency contact?',
-    'Where can I find nearby shelters or legal aid?',
-    'How do I recover my account if I lose access?',
-    'What does the Guardian AI actually protect?'
+    'How do I create a secure capsule?',
+    'What is PulseKey emergency access?',
+    'How do I store my medical records safely?',
+    'How is my data protected?',
+    'What is ICE (In Case of Emergency) data?',
+    'How does blockchain verification work?'
   ];
 
   const scrollToBottom = () => {
@@ -184,22 +180,26 @@ How can I support you today?`,
           </div>
         </div>
 
-        {/* Quick Questions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Quick Topics</CardTitle>
+        {/* Quick Questions - Key EverGuard Features */}
+        <Card className="border-2 border-primary/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-xl flex items-center gap-2">
+              <Lightbulb className="w-5 h-5 text-primary" />
+              Quick Topics - Ask About EverGuard Features
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {quickQuestions.map((question, index) => (
-                <Badge
+                <Button
                   key={index}
                   variant="outline"
-                  className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                  className="justify-start h-auto py-3 px-4 text-left hover:bg-primary hover:text-primary-foreground transition-all"
                   onClick={() => handleQuickQuestion(question)}
                 >
-                  {question}
-                </Badge>
+                  <MessageCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span className="text-sm">{question}</span>
+                </Button>
               ))}
             </div>
           </CardContent>
@@ -347,14 +347,11 @@ How can I support you today?`,
           </Alert>
         )}
 
-        {/* Footer - Fixed to bottom with proper spacing */}
-        <div className="mt-4 mb-8">
-          <Alert className="bg-muted/50">
-            <MessageCircle className="h-4 w-4" />
-            <AlertDescription className="text-sm">
-              Need emergency help? Call 0800 428 428 (GBV Command Centre) • 10111 (Police) • 112 (Medical)
-            </AlertDescription>
-          </Alert>
+        {/* Footer - Compact emergency info */}
+        <div className="mt-6 pb-8">
+          <p className="text-center text-sm text-muted-foreground">
+            🚨 Emergency? Call: <strong>0800 428 428</strong> (GBV) • <strong>10111</strong> (Police) • <strong>112</strong> (Medical)
+          </p>
         </div>
       </div>
     </div>

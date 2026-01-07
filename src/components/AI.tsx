@@ -19,7 +19,8 @@ import {
   Lightbulb,
   Bot,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  ExternalLink
 } from "lucide-react";
 import axios from 'axios';
 import { API_URL } from '@/config/api';
@@ -74,6 +75,44 @@ What would you like to know?`,
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Convert markdown links [text](url) to clickable React links
+  const renderMessageWithLinks = (text: string) => {
+    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = linkRegex.exec(text)) !== null) {
+      // Add text before the link
+      if (match.index > lastIndex) {
+        parts.push(text.substring(lastIndex, match.index));
+      }
+      
+      // Add the link as a React component
+      const linkText = match[1];
+      const url = match[2];
+      parts.push(
+        <a
+          key={match.index}
+          href={url}
+          className="text-primary underline hover:text-primary/80 font-semibold inline-flex items-center gap-1"
+        >
+          {linkText}
+          <ExternalLink className="w-3 h-3" />
+        </a>
+      );
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
+    
+    return parts.length > 0 ? parts : text;
+  };
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -259,7 +298,9 @@ How can I support you today?`,
                           : 'bg-muted'
                       }`}
                     >
-                      <p className="text-sm leading-relaxed">{message.text}</p>
+                      <p className="text-sm leading-relaxed whitespace-pre-line">
+                        {renderMessageWithLinks(message.text)}
+                      </p>
 
                       {message.suggestions && message.suggestions.length > 0 && (
                         <div className="mt-3 space-y-2">

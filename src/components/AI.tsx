@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -156,7 +157,7 @@ How can I support you today?`,
     ]);
   };
 
-  const handleKeyPress = (event: React.KeyboardEvent) => {
+  const handleKeyPress = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       handleSendMessage();
@@ -319,19 +320,21 @@ How can I support you today?`,
 
           {/* Input */}
           <CardContent className="p-4">
-            <div className="flex gap-2">
-              <Input
+            <div className="flex gap-2 items-end">
+              <Textarea
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyPress}
                 placeholder={t('ai.placeholder')}
                 disabled={isLoading}
-                className="flex-1"
+                className="flex-1 min-h-[60px] max-h-[120px] resize-none"
+                rows={2}
               />
               <Button
                 onClick={handleSendMessage}
                 disabled={!inputMessage.trim() || isLoading}
                 size="sm"
+                className="h-[60px] px-4"
               >
                 <Send className="w-4 h-4" />
               </Button>
@@ -352,8 +355,8 @@ How can I support you today?`,
 
         {/* Footer - Compact emergency info */}
         <div className="mt-6 pb-8">
-          <p className="text-center text-sm text-muted-foreground">
-            🚨 Emergency? Call: <strong>0800 428 428</strong> (GBV) • <strong>10111</strong> (Police) • <strong>112</strong> (Medical)
+          <p className="text-center text-xs text-muted-foreground leading-relaxed">
+            🚨 Emergency: <strong className="text-destructive">0800 428 428</strong> • <strong className="text-destructive">10111</strong> • <strong className="text-destructive">112</strong>
           </p>
         </div>
       </div>

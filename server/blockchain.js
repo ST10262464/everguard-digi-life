@@ -346,159 +346,146 @@ async function getTransactionsFromExplorer() {
 
 /**
  * Get all blockchain transactions from contract events
- * First tries explorer API, falls back to block scanning if needed
+ * DISABLED: Block scanning is unreliable due to RPC rate limiting
+ * Use getTransactionByHash or manual import instead
  */
 async function getAllBlockchainTransactions(quickScan = true) {
+  // Block scanning disabled - too slow and causes 502 errors
+  // Return empty array - transactions come from Firestore instead
+  console.log('ℹ️  [BLOCKCHAIN] Block scanning disabled - using Firestore for historical data');
+  return [];
+}
+
+/**
+ * Verify and parse a single transaction by hash
+ * This is fast and reliable - just one RPC call
+ */
+async function getTransactionByHash(txHash) {
+  try {
+    if (!contract || !provider) {
+      throw new Error('Blockchain not initialized');
+    }
+    
+    console.log(`🔍 [BLOCKCHAIN] Fetching transaction: ${txHash}`);
+    
+    // Get transaction receipt
+    const receipt = await provider.getTransactionReceipt(txHash);
+    
+    if (!receipt) {
+      return { success: false, error: 'Transaction not found' };
+    }
+    
+    // Verify it's to our contract
+    const contractAddress = process.env.CONTRACT_ADDRESS?.toLowerCase();
+    if (receipt.to?.toLowerCase() !== contractAddress) {
+      return { success: false, error: 'Transaction is not for this contract' };
+    }
+    
+    // Get block for timestamp
+    const block = await provider.getBlock(receipt.blockNumber);
+    const timestamp = block ? new Date(block.timestamp * 1000).toISOString() : new Date().toISOString();
+    
+    // Parse events from logs
+    const events = [];
+    for (const log of receipt.logs) {
+      if (log.address.toLowerCase() !== contractAddress) {
+        continue;
+      }
+      
+      try {
+        const parsedLog = contract.interface.parseLog({
+          topics: log.topics,
+          data: log.data
+        });
+        
+        if (parsedLog.name === 'CapsuleCreated') {
+          events.push({
+            type: 'CapsuleCreated',
+            txHash: txHash,
+            blockNumber: receipt.blockNumber,
+            timestamp: timestamp,
+            capsuleId: parsedLog.args.id.toString(),
+            capsuleHash: parsedLog.args.capsuleHash,
+            capsuleType: parsedLog.args.capsuleType,
+            owner: parsedLog.args.owner
+          });
+        } else if (parsedLog.name === 'BurstKeyIssued') {
+          events.push({
+            type: 'BurstKeyIssued',
+            txHash: txHash,
+            blockNumber: receipt.blockNumber,
+            timestamp: timestamp,
+            burstId: parsedLog.args.burstId.toString(),
+            capsuleId: parsedLog.args.capsuleId.toString(),
+            accessor: parsedLog.args.accessor,
+            expiresAt: parsedLog.args.expiresAt.toString()
+          });
+        } else if (parsedLog.name === 'BurstKeyConsumed') {
+          events.push({
+            type: 'BurstKeyConsumed',
+            txHash: txHash,
+            blockNumber: receipt.blockNumber,
+            timestamp: timestamp,
+            burstId: parsedLog.args.burstId.toString()
+          });
+        }
+      } catch (parseError) {
+        // Not our event, skip
+      }
+    }
+    
+    if (events.length === 0) {
+      // Still a valid contract transaction, just no parseable events
+      events.push({
+        type: 'ContractInteraction',
+        txHash: txHash,
+        blockNumber: receipt.blockNumber,
+        timestamp: timestamp,
+        status: receipt.status === 1 ? 'success' : 'failed'
+      });
+    }
+    
+    console.log(`✅ [BLOCKCHAIN] Parsed ${events.length} events from transaction`);
+    
+    return {
+      success: true,
+      txHash: txHash,
+      blockNumber: receipt.blockNumber,
+      timestamp: timestamp,
+      status: receipt.status === 1 ? 'confirmed' : 'failed',
+      events: events
+    };
+  } catch (error) {
+    console.error(`❌ [BLOCKCHAIN] Failed to get transaction ${txHash}:`, error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Query capsule data directly from contract (no block scanning)
+ * Much faster than block scanning
+ */
+async function getCapsuleFromContract(capsuleId) {
   try {
     if (!contract) {
       throw new Error('Contract not initialized');
     }
     
-    // First, try to use explorer API (much faster)
-    const explorerTxs = await getTransactionsFromExplorer();
-    if (explorerTxs && explorerTxs.length > 0) {
-      return await parseExplorerTransactions(explorerTxs);
-    }
+    const capsule = await contract.getCapsule(capsuleId);
     
-    // Fallback to block scanning
-    console.log('🔍 [BLOCKCHAIN] Using block scanning method...');
-    console.log(`📊 [BLOCKCHAIN] Quick scan mode: ${quickScan}`);
-    
-    const allEvents = [];
-    const contractAddress = process.env.CONTRACT_ADDRESS.toLowerCase();
-    
-    // Get current block number
-    const currentBlock = await provider.getBlockNumber();
-    console.log(`📊 [BLOCKCHAIN] Current block: ${currentBlock}`);
-    
-    // Scan fewer blocks to avoid overwhelming RPC and timing out
-    // Start with recent blocks - most important transactions are recent
-    // This will complete fast, then we can backfill historical data separately
-    let blocksToScan;
-    if (quickScan) {
-      blocksToScan = parseInt(process.env.BLOCKCHAIN_SCAN_BLOCKS || '5000'); // Quick scan: 5k blocks
-    } else {
-      blocksToScan = 100000; // Deep scan: 100k blocks (~11 days)
-    }
-    const startBlock = Math.max(0, currentBlock - blocksToScan);
-    
-    console.log(`🔍 [BLOCKCHAIN] Scanning blocks ${startBlock} to ${currentBlock} (${blocksToScan.toLocaleString()} blocks)...`);
-    console.log(`📅 [BLOCKCHAIN] This covers approximately ${Math.round(blocksToScan * 10 / 86400)} days of history`);
-    
-    // Batch process blocks in smaller chunks with delays to avoid rate limiting
-    const batchSize = 10; // Reduced from 100 to avoid 502 errors
-    let processedBlocks = 0;
-    const maxBlocks = 1000; // Stop after 1000 blocks to keep response time reasonable
-    
-    for (let i = startBlock; i <= currentBlock && processedBlocks < maxBlocks; i += batchSize) {
-      const endBlock = Math.min(i + batchSize - 1, currentBlock);
-      
-      // Process each block in the batch
-      for (let blockNum = i; blockNum <= endBlock && processedBlocks < maxBlocks; blockNum++) {
-        try {
-          // Get block with transactions
-          const block = await provider.getBlock(blockNum, true);
-          
-          if (!block || !block.transactions || block.transactions.length === 0) {
-            continue;
-          }
-          
-          // Check each transaction in the block
-          for (const tx of block.transactions) {
-            // Skip if not a transaction object or not to our contract
-            if (!tx.to || tx.to.toLowerCase() !== contractAddress) {
-              continue;
-            }
-            
-            try {
-              // Get transaction receipt to parse logs
-              const receipt = await provider.getTransactionReceipt(tx.hash);
-              
-              if (!receipt || !receipt.logs || receipt.logs.length === 0) {
-                continue;
-              }
-              
-              // Parse logs for our events
-              for (const log of receipt.logs) {
-                if (log.address.toLowerCase() !== contractAddress) {
-                  continue;
-                }
-                
-                const timestamp = new Date(block.timestamp * 1000).toISOString();
-                
-                try {
-                  // Parse the log using contract interface
-                  const parsedLog = contract.interface.parseLog({
-                    topics: log.topics,
-                    data: log.data
-                  });
-                  
-                  // Handle different event types
-                  if (parsedLog.name === 'CapsuleCreated') {
-                    allEvents.push({
-                      type: 'CapsuleCreated',
-                      txHash: tx.hash,
-                      blockNumber: blockNum,
-                      timestamp: timestamp,
-                      capsuleId: parsedLog.args.id.toString(),
-                      capsuleHash: parsedLog.args.capsuleHash,
-                      capsuleType: parsedLog.args.capsuleType,
-                      owner: parsedLog.args.owner
-                    });
-                  } else if (parsedLog.name === 'BurstKeyIssued') {
-                    allEvents.push({
-                      type: 'BurstKeyIssued',
-                      txHash: tx.hash,
-                      blockNumber: blockNum,
-                      timestamp: timestamp,
-                      burstId: parsedLog.args.burstId.toString(),
-                      capsuleId: parsedLog.args.capsuleId.toString(),
-                      accessor: parsedLog.args.accessor,
-                      expiresAt: parsedLog.args.expiresAt.toString(),
-                      contextHash: parsedLog.args.contextHash
-                    });
-                  } else if (parsedLog.name === 'BurstKeyConsumed') {
-                    allEvents.push({
-                      type: 'BurstKeyConsumed',
-                      txHash: tx.hash,
-                      blockNumber: blockNum,
-                      timestamp: timestamp,
-                      burstId: parsedLog.args.burstId.toString()
-                    });
-                  }
-                } catch (parseError) {
-                  // Silently skip unparseable logs
-                }
-              }
-            } catch (txError) {
-              console.warn(`⚠️  [BLOCKCHAIN] Failed to process tx ${tx.hash}:`, txError.message);
-            }
-          }
-          
-          processedBlocks++;
-          
-          // Progress indicator every 1000 blocks
-          if (processedBlocks % 1000 === 0) {
-            console.log(`📊 [BLOCKCHAIN] Scanned ${processedBlocks} blocks, found ${allEvents.length} events`);
-          }
-        } catch (blockError) {
-          console.warn(`⚠️  [BLOCKCHAIN] Failed to get block ${blockNum}:`, blockError.message);
-        }
+    return {
+      success: true,
+      capsule: {
+        id: capsule.id.toString(),
+        capsuleHash: capsule.capsuleHash,
+        timestamp: new Date(Number(capsule.timestamp) * 1000).toISOString(),
+        capsuleType: capsule.capsuleType,
+        owner: capsule.owner,
+        status: capsule.status
       }
-      
-      // Longer delay between batches to avoid 502 errors
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-    
-    // Sort by block number (newest first)
-    allEvents.sort((a, b) => b.blockNumber - a.blockNumber);
-    
-    console.log(`✅ [BLOCKCHAIN] Retrieved ${allEvents.length} blockchain events from ${processedBlocks} blocks`);
-    
-    return allEvents;
+    };
   } catch (error) {
-    console.error('❌ [BLOCKCHAIN] Failed to get blockchain transactions:', error.message);
-    return [];
+    return { success: false, error: error.message };
   }
 }
 
@@ -607,6 +594,8 @@ module.exports = {
   consumeBurstKeyOnChain,
   getCapsuleAccessLog,
   getAllBlockchainTransactions,
+  getTransactionByHash,
+  getCapsuleFromContract,
   getConnectionStatus,
   provider,
   contract,

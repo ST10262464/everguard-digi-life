@@ -2,7 +2,7 @@ const express = require('express');
 const { getFirestore, COLLECTIONS } = require('../config/firebase');
 const { getBurstKeyStatus, BURST_KEY_STATUS } = require('../utils/burstKey');
 const { getQueueStats, getAllTransactions, getHistoricalTransactions } = require('../utils/transactionQueue');
-const { getAllBlockchainTransactions } = require('../blockchain');
+const { getAllBlockchainTransactions, getTransactionByHash } = require('../blockchain');
 
 const router = express.Router();
 
@@ -382,78 +382,112 @@ router.get('/stats', async (req, res) => {
 });
 
 /**
- * POST /api/admin/sync-blockchain
- * Trigger a background sync of historical blockchain transactions to Firestore
+ * POST /api/admin/import-transactions
+ * Import transactions by their hashes (from BlockDAG explorer)
+ * Body: { transactions: ["0x123...", "0x456..."] }
  */
-router.post('/sync-blockchain', async (req, res) => {
+router.post('/import-transactions', async (req, res) => {
   try {
-    // Return immediately and run sync in background
-    res.json({
-      success: true,
-      message: 'Blockchain sync started in background. This may take 10-30 minutes. Check logs for progress.'
-    });
+    const { transactions } = req.body;
     
-    // Run sync in background (non-blocking)
-    setImmediate(async () => {
+    if (!transactions || !Array.isArray(transactions) || transactions.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide an array of transaction hashes'
+      });
+    }
+    
+    console.log(`📥 [ADMIN] Importing ${transactions.length} transactions...`);
+    
+    const db = getFirestore();
+    const results = {
+      imported: 0,
+      skipped: 0,
+      failed: 0,
+      details: []
+    };
+    
+    for (const txHash of transactions) {
       try {
-        console.log('🔄 [ADMIN] Starting background blockchain sync...');
-        console.log('📊 [ADMIN] This will scan blocks and save historical transactions to Firestore');
-        
-        const db = getFirestore();
-        
-        // Do a deep scan (not quick)
-        const events = await getAllBlockchainTransactions(false);
-        
-        console.log(`✅ [ADMIN] Blockchain scan complete. Found ${events.length} events`);
-        
-        // Save all events to Firestore
-        let saved = 0;
-        for (const event of events) {
-          try {
-            const txData = {
-              txId: event.txHash,
-              type: event.type,
-              txHash: event.txHash,
-              status: 'confirmed',
-              metadata: {
-                capsuleId: event.capsuleId,
-                burstId: event.burstId,
-                accessor: event.accessor,
-                owner: event.owner,
-                blockNumber: event.blockNumber
-              },
-              result: {},
-              createdAt: event.timestamp,
-              completedAt: event.timestamp,
-              source: 'blockchain_sync'
-            };
-            
-            // Check if already exists
-            const existing = await db.collection(COLLECTIONS.TRANSACTIONS).doc(event.txHash).get();
-            if (!existing.exists) {
-              await db.collection(COLLECTIONS.TRANSACTIONS).doc(event.txHash).set(txData);
-              saved++;
-            }
-          } catch (saveError) {
-            console.warn(`⚠️  [ADMIN] Failed to save transaction ${event.txHash}:`, saveError.message);
-          }
+        // Check if already exists
+        const existing = await db.collection(COLLECTIONS.TRANSACTIONS).doc(txHash).get();
+        if (existing.exists) {
+          results.skipped++;
+          results.details.push({ txHash, status: 'skipped', reason: 'Already exists' });
+          continue;
         }
         
-        console.log(`✅ [ADMIN] Background sync complete. Saved ${saved} new transactions to Firestore`);
-        console.log('💡 [ADMIN] Historical transactions now available in admin panel');
+        // Fetch and verify from blockchain
+        const txResult = await getTransactionByHash(txHash);
         
-      } catch (syncError) {
-        console.error('❌ [ADMIN] Background sync failed:', syncError.message);
+        if (!txResult.success) {
+          results.failed++;
+          results.details.push({ txHash, status: 'failed', reason: txResult.error });
+          continue;
+        }
+        
+        // Save to Firestore
+        const txData = {
+          txId: txHash,
+          type: txResult.events[0]?.type || 'ContractInteraction',
+          txHash: txHash,
+          status: txResult.status,
+          metadata: {
+            blockNumber: txResult.blockNumber,
+            events: txResult.events
+          },
+          createdAt: txResult.timestamp,
+          completedAt: txResult.timestamp,
+          source: 'manual_import'
+        };
+        
+        await db.collection(COLLECTIONS.TRANSACTIONS).doc(txHash).set(txData);
+        results.imported++;
+        results.details.push({ txHash, status: 'imported', type: txData.type });
+        
+        // Small delay to avoid overwhelming RPC
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+      } catch (error) {
+        results.failed++;
+        results.details.push({ txHash, status: 'failed', reason: error.message });
       }
+    }
+    
+    console.log(`✅ [ADMIN] Import complete: ${results.imported} imported, ${results.skipped} skipped, ${results.failed} failed`);
+    
+    res.json({
+      success: true,
+      message: `Imported ${results.imported} transactions`,
+      results
     });
     
   } catch (error) {
-    console.error('❌ [ADMIN] Error starting sync:', error);
+    console.error('❌ [ADMIN] Error importing transactions:', error);
     res.status(500).json({
       success: false,
       error: error.message
     });
   }
+});
+
+/**
+ * POST /api/admin/sync-blockchain
+ * DEPRECATED - Block scanning is unreliable
+ * Use /import-transactions instead with hashes from BlockDAG explorer
+ */
+router.post('/sync-blockchain', async (req, res) => {
+  res.status(400).json({
+    success: false,
+    error: 'Block scanning is disabled due to RPC rate limiting',
+    message: 'Please use /api/admin/import-transactions instead. Get your transaction hashes from the BlockDAG explorer at https://awakening.bdagscan.com',
+    instructions: [
+      '1. Go to https://awakening.bdagscan.com',
+      '2. Search for your contract address',
+      '3. Copy all transaction hashes from your contract',
+      '4. POST them to /api/admin/import-transactions as { "transactions": ["0x...", "0x..."] }'
+    ]
+  });
 });
 
 module.exports = router;

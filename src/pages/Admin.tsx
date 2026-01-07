@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   Users, 
   Shield, 
@@ -14,7 +15,10 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  AlertTriangle
+  AlertTriangle,
+  Download,
+  Upload,
+  Loader2
 } from 'lucide-react';
 
 import { API_URL, BLOCKDAG_EXPLORER } from '@/config/api';
@@ -38,6 +42,11 @@ export default function Admin() {
   
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'capsules' | 'burstkeys' | 'audit' | 'medics' | 'transactions'>('overview');
+  
+  // Import transactions state
+  const [importHashes, setImportHashes] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ success: boolean; message: string; details?: any[] } | null>(null);
 
   const fetchAllData = async () => {
     setLoading(true);
@@ -79,6 +88,60 @@ export default function Admin() {
   useEffect(() => {
     fetchAllData();
   }, []);
+
+  const handleImportTransactions = async () => {
+    if (!importHashes.trim()) return;
+    
+    setImporting(true);
+    setImportResult(null);
+    
+    try {
+      // Parse hashes (one per line, or comma-separated)
+      const hashes = importHashes
+        .split(/[\n,]/)
+        .map(h => h.trim())
+        .filter(h => h.startsWith('0x') && h.length === 66);
+      
+      if (hashes.length === 0) {
+        setImportResult({
+          success: false,
+          message: 'No valid transaction hashes found. Hashes should start with 0x and be 66 characters long.'
+        });
+        return;
+      }
+      
+      const response = await fetch(`${API_URL}/api/admin/import-transactions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactions: hashes })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setImportResult({
+          success: true,
+          message: data.message,
+          details: data.results?.details
+        });
+        // Refresh transactions list
+        fetchAllData();
+        setImportHashes('');
+      } else {
+        setImportResult({
+          success: false,
+          message: data.error || 'Import failed'
+        });
+      }
+    } catch (error: any) {
+      setImportResult({
+        success: false,
+        message: error.message || 'Import failed'
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const formatDate = (dateString: string | number) => {
     if (typeof dateString === 'number') {
@@ -435,6 +498,80 @@ export default function Admin() {
                 <CardDescription className="text-lg font-semibold">
                   All Transactions ({transactions.length})
                 </CardDescription>
+                
+                {/* Import Transactions Section */}
+                <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Upload className="w-4 h-4 text-blue-600" />
+                      Import Transactions from BlockDAG Explorer
+                    </CardTitle>
+                    <CardDescription>
+                      Copy transaction hashes from{' '}
+                      <a 
+                        href={`${BLOCKDAG_EXPLORER}/address/${process.env.CONTRACT_ADDRESS || ''}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        BlockDAG Explorer
+                      </a>
+                      {' '}and paste them below (one per line or comma-separated)
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Textarea
+                      placeholder="0x1234...abcd&#10;0x5678...efgh&#10;0x9abc...ijkl"
+                      value={importHashes}
+                      onChange={(e) => setImportHashes(e.target.value)}
+                      className="min-h-[100px] font-mono text-xs"
+                      disabled={importing}
+                    />
+                    <div className="flex items-center gap-3">
+                      <Button 
+                        onClick={handleImportTransactions}
+                        disabled={importing || !importHashes.trim()}
+                        className="gap-2"
+                      >
+                        {importing ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Importing...
+                          </>
+                        ) : (
+                          <>
+                            <Download className="w-4 h-4" />
+                            Import Transactions
+                          </>
+                        )}
+                      </Button>
+                      <span className="text-xs text-muted-foreground">
+                        {importHashes.trim() ? 
+                          `${importHashes.split(/[\n,]/).filter(h => h.trim().startsWith('0x')).length} hashes detected` : 
+                          'No hashes entered'}
+                      </span>
+                    </div>
+                    
+                    {importResult && (
+                      <div className={`p-3 rounded-lg ${importResult.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        <div className="flex items-center gap-2 font-medium">
+                          {importResult.success ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                          {importResult.message}
+                        </div>
+                        {importResult.details && importResult.details.length > 0 && (
+                          <div className="mt-2 text-xs space-y-1 max-h-[150px] overflow-y-auto">
+                            {importResult.details.map((d, i) => (
+                              <div key={i} className="font-mono">
+                                {d.txHash.substring(0, 10)}... - {d.status}
+                                {d.reason && ` (${d.reason})`}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
                 
                 {/* Transaction Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

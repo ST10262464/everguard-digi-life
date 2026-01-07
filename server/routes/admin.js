@@ -205,16 +205,76 @@ router.get('/medics', async (req, res) => {
 
 /**
  * GET /api/admin/transactions
- * Get all blockchain transactions (queue + Firestore + contract direct query)
+ * Get all blockchain transactions (queue + Firestore + contract + burstKeys + capsules)
  */
 router.get('/transactions', async (req, res) => {
   try {
+    const db = getFirestore();
+    
     // Get pending transactions from queue
     const queueTransactions = getAllTransactions();
     const queueStats = getQueueStats();
     
-    // Get historical transactions from Firestore
+    // Get historical transactions from Firestore transactions collection
     const firestoreTransactions = await getHistoricalTransactions(200);
+    
+    // Get burst keys from Firestore (they have blockchain tx hashes!)
+    let burstKeysFromFirestore = [];
+    try {
+      const burstKeysSnapshot = await db.collection(COLLECTIONS.BURST_KEYS).get();
+      burstKeysSnapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.blockchainTxHash || data.txHash) {
+          burstKeysFromFirestore.push({
+            txId: doc.id,
+            type: 'BurstKeyIssued',
+            txHash: data.blockchainTxHash || data.txHash,
+            status: 'confirmed',
+            source: 'firestore_burstkeys',
+            metadata: {
+              burstId: data.burstId,
+              capsuleId: data.capsuleId,
+              accessorId: data.accessorId,
+              blockchainBurstKeyId: data.blockchainBurstKeyId
+            },
+            createdAt: data.issuedAt ? new Date(data.issuedAt).toISOString() : null,
+            completedAt: data.issuedAt ? new Date(data.issuedAt).toISOString() : null
+          });
+        }
+      });
+      console.log(`📋 [ADMIN] Found ${burstKeysFromFirestore.length} burst keys with tx hashes`);
+    } catch (e) {
+      console.warn('⚠️  [ADMIN] Could not fetch burst keys:', e.message);
+    }
+    
+    // Get capsules from Firestore (they have blockchain tx hashes!)
+    let capsulesFromFirestore = [];
+    try {
+      const capsulesSnapshot = await db.collection(COLLECTIONS.CAPSULES).get();
+      capsulesSnapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.blockchainTxHash || data.txHash) {
+          capsulesFromFirestore.push({
+            txId: doc.id,
+            type: 'CapsuleCreated',
+            txHash: data.blockchainTxHash || data.txHash,
+            status: 'confirmed',
+            source: 'firestore_capsules',
+            metadata: {
+              capsuleId: doc.id,
+              capsuleType: data.capsuleType,
+              blockchainId: data.blockchainId,
+              ownerId: data.ownerId
+            },
+            createdAt: data.createdAt,
+            completedAt: data.createdAt
+          });
+        }
+      });
+      console.log(`📋 [ADMIN] Found ${capsulesFromFirestore.length} capsules with tx hashes`);
+    } catch (e) {
+      console.warn('⚠️  [ADMIN] Could not fetch capsules:', e.message);
+    }
     
     // Get contract data directly (reliable, no block scanning)
     let contractData = { transactions: [], summary: {} };
@@ -227,21 +287,37 @@ router.get('/transactions', async (req, res) => {
       console.warn('⚠️  [ADMIN] Contract query failed:', contractError.message);
     }
     
-    // Map to track unique transactions by txId
+    // Map to track unique transactions by txHash (prioritize real tx hashes)
     const transactionMap = new Map();
     
-    // Add queue transactions (highest priority - most recent status)
-    queueTransactions.forEach(tx => {
-      const key = tx.txHash || tx.txId;
-      transactionMap.set(key, {
-        ...tx,
-        source: 'queue',
-        status: tx.status || 'pending',
-        createdAt: new Date(tx.createdAt).toISOString()
-      });
+    // Add Firestore capsules with tx hashes (highest priority - real blockchain links)
+    capsulesFromFirestore.forEach(tx => {
+      if (tx.txHash) {
+        transactionMap.set(tx.txHash, tx);
+      }
     });
     
-    // Add Firestore historical transactions
+    // Add Firestore burst keys with tx hashes
+    burstKeysFromFirestore.forEach(tx => {
+      if (tx.txHash && !transactionMap.has(tx.txHash)) {
+        transactionMap.set(tx.txHash, tx);
+      }
+    });
+    
+    // Add queue transactions
+    queueTransactions.forEach(tx => {
+      const key = tx.txHash || tx.txId;
+      if (!transactionMap.has(key)) {
+        transactionMap.set(key, {
+          ...tx,
+          source: 'queue',
+          status: tx.status || 'pending',
+          createdAt: new Date(tx.createdAt).toISOString()
+        });
+      }
+    });
+    
+    // Add Firestore transactions collection
     firestoreTransactions.forEach(tx => {
       const key = tx.txHash || tx.txId;
       if (!transactionMap.has(key)) {
@@ -259,11 +335,20 @@ router.get('/transactions', async (req, res) => {
       }
     });
     
-    // Add contract data (capsules and burst keys from direct query)
+    // Add contract data (only if we don't have real tx hashes for them)
     contractData.transactions.forEach(tx => {
-      const key = tx.txId;
-      if (!transactionMap.has(key)) {
-        transactionMap.set(key, tx);
+      // Only add if we don't have a transaction with a real hash for this capsule/burstkey
+      const hasRealTx = Array.from(transactionMap.values()).some(existing => 
+        existing.metadata?.capsuleId === tx.metadata?.capsuleId && 
+        existing.type === tx.type &&
+        existing.txHash
+      );
+      
+      if (!hasRealTx) {
+        const key = tx.txId;
+        if (!transactionMap.has(key)) {
+          transactionMap.set(key, tx);
+        }
       }
     });
     
@@ -272,8 +357,8 @@ router.get('/transactions', async (req, res) => {
     
     // Sort by creation time (newest first)
     allTransactions.sort((a, b) => {
-      const timeA = new Date(a.createdAt).getTime();
-      const timeB = new Date(b.createdAt).getTime();
+      const timeA = new Date(a.createdAt || 0).getTime();
+      const timeB = new Date(b.createdAt || 0).getTime();
       return timeB - timeA;
     });
     
@@ -285,6 +370,8 @@ router.get('/transactions', async (req, res) => {
         ...queueStats,
         contractCapsules: contractData.summary?.totalCapsules || 0,
         contractBurstKeys: contractData.summary?.totalBurstKeys || 0,
+        firestoreCapsules: capsulesFromFirestore.length,
+        firestoreBurstKeys: burstKeysFromFirestore.length,
         firestoreTransactions: firestoreTransactions.length,
         queueTransactions: queueTransactions.length,
         totalUnique: allTransactions.length

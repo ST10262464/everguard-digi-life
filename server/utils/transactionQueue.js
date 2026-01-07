@@ -3,6 +3,8 @@
  * Handles pending blockchain transactions and retries
  */
 
+const { getFirestore, COLLECTIONS } = require('../config/firebase');
+
 const pendingTransactions = new Map();
 let txIdCounter = 1;
 
@@ -35,7 +37,7 @@ function addPendingTransaction(type, txHash, metadata) {
 /**
  * Update transaction status
  */
-function updateTransactionStatus(txId, status, result = null) {
+async function updateTransactionStatus(txId, status, result = null) {
   const tx = pendingTransactions.get(txId);
   
   if (!tx) {
@@ -53,8 +55,14 @@ function updateTransactionStatus(txId, status, result = null) {
   if (status === 'confirmed' || status === 'failed') {
     console.log(`${status === 'confirmed' ? '✅' : '❌'} [QUEUE] Transaction ${status}: ${txId}`);
     
-    // Remove confirmed/failed transactions from queue immediately since they're on blockchain
-    // They don't need to stay in the queue anymore
+    // Save to Firestore before removing from queue
+    try {
+      await storeTransactionToFirestore(tx);
+    } catch (error) {
+      console.error(`❌ [QUEUE] Failed to store transaction to Firestore:`, error.message);
+    }
+    
+    // Remove confirmed/failed transactions from queue
     pendingTransactions.delete(txId);
   }
   
@@ -161,6 +169,59 @@ function getQueueStats() {
 }
 
 /**
+ * Store transaction to Firestore for historical record
+ */
+async function storeTransactionToFirestore(tx) {
+  try {
+    const db = getFirestore();
+    const docData = {
+      txId: tx.txId,
+      type: tx.type,
+      txHash: tx.txHash,
+      status: tx.status,
+      metadata: tx.metadata || {},
+      result: tx.result || {},
+      createdAt: new Date(tx.createdAt).toISOString(),
+      completedAt: new Date().toISOString()
+    };
+    
+    await db.collection(COLLECTIONS.TRANSACTIONS).doc(tx.txId).set(docData);
+    console.log(`💾 [QUEUE] Stored transaction to Firestore: ${tx.txId}`);
+  } catch (error) {
+    console.error(`❌ [QUEUE] Failed to store to Firestore:`, error.message);
+    throw error;
+  }
+}
+
+/**
+ * Get historical transactions from Firestore
+ */
+async function getHistoricalTransactions(limit = 100) {
+  try {
+    const db = getFirestore();
+    
+    const snapshot = await db.collection(COLLECTIONS.TRANSACTIONS)
+      .orderBy('completedAt', 'desc')
+      .limit(limit)
+      .get();
+    
+    const transactions = [];
+    snapshot.forEach(doc => {
+      transactions.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+    
+    console.log(`📋 [QUEUE] Retrieved ${transactions.length} historical transactions from Firestore`);
+    return transactions;
+  } catch (error) {
+    console.error(`❌ [QUEUE] Failed to get historical transactions:`, error.message);
+    return [];
+  }
+}
+
+/**
  * Cleanup old transactions (optional maintenance)
  */
 function cleanupOldTransactions() {
@@ -191,6 +252,7 @@ module.exports = {
   retryTransaction,
   getAllTransactions,
   getQueueStats,
+  getHistoricalTransactions,
   cleanupOldTransactions
 };
 

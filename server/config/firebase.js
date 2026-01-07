@@ -110,7 +110,8 @@ const COLLECTIONS = {
   CAPSULES: 'capsules',
   BURST_KEYS: 'burstKeys',
   MEDIC_REGISTRY: 'medicRegistry',
-  AUDIT_LOG: 'auditLog'
+  AUDIT_LOG: 'auditLog',
+  TRANSACTIONS: 'transactions'
 };
 
 module.exports = {

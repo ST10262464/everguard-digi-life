@@ -1,7 +1,7 @@
 const express = require('express');
 const { getFirestore, COLLECTIONS } = require('../config/firebase');
 const { getBurstKeyStatus, BURST_KEY_STATUS } = require('../utils/burstKey');
-const { getQueueStats, getAllTransactions } = require('../utils/transactionQueue');
+const { getQueueStats, getAllTransactions, getHistoricalTransactions } = require('../utils/transactionQueue');
 const { getAllBlockchainTransactions } = require('../blockchain');
 
 const router = express.Router();
@@ -205,7 +205,7 @@ router.get('/medics', async (req, res) => {
 
 /**
  * GET /api/admin/transactions
- * Get all blockchain transactions (queue + historical events)
+ * Get all blockchain transactions (queue + Firestore historical + blockchain scan)
  */
 router.get('/transactions', async (req, res) => {
   try {
@@ -213,36 +213,73 @@ router.get('/transactions', async (req, res) => {
     const queueTransactions = getAllTransactions();
     const queueStats = getQueueStats();
     
-    // Get historical blockchain events
+    // Get historical transactions from Firestore
+    const firestoreTransactions = await getHistoricalTransactions(200);
+    
+    // Get blockchain events (this will scan recent blocks)
     const blockchainEvents = await getAllBlockchainTransactions();
     
-    // Combine both types
-    const allTransactions = [
-      ...queueTransactions.map(tx => ({
+    // Map to track unique transactions by txHash
+    const transactionMap = new Map();
+    
+    // Add queue transactions (highest priority - most recent status)
+    queueTransactions.forEach(tx => {
+      transactionMap.set(tx.txHash, {
         ...tx,
         source: 'queue',
-        status: tx.status || 'pending'
-      })),
-      ...blockchainEvents.map(event => ({
-        txId: event.txHash,
-        type: event.type,
-        txHash: event.txHash,
-        status: 'confirmed',
-        source: 'blockchain',
-        blockNumber: event.blockNumber,
-        timestamp: event.timestamp,
-        metadata: {
-          capsuleId: event.capsuleId,
-          burstId: event.burstId,
-          accessor: event.accessor,
-          owner: event.owner
-        },
-        createdAt: event.timestamp // Already an ISO string, use directly
-      }))
-    ];
+        status: tx.status || 'pending',
+        createdAt: new Date(tx.createdAt).toISOString()
+      });
+    });
+    
+    // Add Firestore historical transactions (don't overwrite queue items)
+    firestoreTransactions.forEach(tx => {
+      if (!transactionMap.has(tx.txHash)) {
+        transactionMap.set(tx.txHash, {
+          txId: tx.txId,
+          type: tx.type,
+          txHash: tx.txHash,
+          status: tx.status,
+          source: 'firestore',
+          metadata: tx.metadata || {},
+          result: tx.result || {},
+          createdAt: tx.createdAt,
+          completedAt: tx.completedAt
+        });
+      }
+    });
+    
+    // Add blockchain events (only if not already in queue or Firestore)
+    blockchainEvents.forEach(event => {
+      if (!transactionMap.has(event.txHash)) {
+        transactionMap.set(event.txHash, {
+          txId: event.txHash,
+          type: event.type,
+          txHash: event.txHash,
+          status: 'confirmed',
+          source: 'blockchain',
+          blockNumber: event.blockNumber,
+          timestamp: event.timestamp,
+          metadata: {
+            capsuleId: event.capsuleId,
+            burstId: event.burstId,
+            accessor: event.accessor,
+            owner: event.owner
+          },
+          createdAt: event.timestamp
+        });
+      }
+    });
+    
+    // Convert map to array
+    const allTransactions = Array.from(transactionMap.values());
     
     // Sort by creation time (newest first)
-    allTransactions.sort((a, b) => b.createdAt - a.createdAt);
+    allTransactions.sort((a, b) => {
+      const timeA = new Date(a.createdAt).getTime();
+      const timeB = new Date(b.createdAt).getTime();
+      return timeB - timeA;
+    });
     
     res.json({
       success: true,
@@ -251,7 +288,9 @@ router.get('/transactions', async (req, res) => {
       stats: {
         ...queueStats,
         blockchainEvents: blockchainEvents.length,
-        queueTransactions: queueTransactions.length
+        firestoreTransactions: firestoreTransactions.length,
+        queueTransactions: queueTransactions.length,
+        totalUnique: allTransactions.length
       }
     });
   } catch (error) {

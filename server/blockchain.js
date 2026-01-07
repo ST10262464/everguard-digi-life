@@ -311,7 +311,42 @@ async function getCapsuleAccessLog(capsuleId) {
 }
 
 /**
+ * Try to fetch transactions from BlockDAG explorer API
+ */
+async function getTransactionsFromExplorer() {
+  try {
+    const contractAddress = process.env.CONTRACT_ADDRESS;
+    const explorerApiUrl = process.env.BLOCKDAG_EXPLORER_API || 'https://api.bdagscan.com';
+    
+    // Try to fetch from explorer API (similar to Etherscan)
+    const axios = require('axios');
+    const response = await axios.get(`${explorerApiUrl}/api`, {
+      params: {
+        module: 'account',
+        action: 'txlist',
+        address: contractAddress,
+        startblock: 0,
+        endblock: 99999999,
+        sort: 'desc'
+      },
+      timeout: 10000
+    });
+    
+    if (response.data && response.data.status === '1' && response.data.result) {
+      console.log(`✅ [BLOCKCHAIN] Fetched ${response.data.result.length} transactions from explorer API`);
+      return response.data.result;
+    }
+    
+    return null;
+  } catch (error) {
+    console.log('⚠️  [BLOCKCHAIN] Explorer API not available, will use block scanning');
+    return null;
+  }
+}
+
+/**
  * Get all blockchain transactions from contract events
+ * First tries explorer API, falls back to block scanning if needed
  */
 async function getAllBlockchainTransactions() {
   try {
@@ -319,93 +354,222 @@ async function getAllBlockchainTransactions() {
       throw new Error('Contract not initialized');
     }
     
-    console.log('🔍 [BLOCKCHAIN] Querying all contract events...');
+    // First, try to use explorer API (much faster)
+    const explorerTxs = await getTransactionsFromExplorer();
+    if (explorerTxs && explorerTxs.length > 0) {
+      return await parseExplorerTransactions(explorerTxs);
+    }
     
-    // Get all CapsuleCreated events
-    const capsuleFilter = contract.filters.CapsuleCreated();
-    const capsuleEvents = await contract.queryFilter(capsuleFilter);
+    // Fallback to block scanning
+    console.log('🔍 [BLOCKCHAIN] Using block scanning method...');
     
-    // Get all BurstKeyIssued events
-    const burstKeyFilter = contract.filters.BurstKeyIssued();
-    const burstKeyEvents = await contract.queryFilter(burstKeyFilter);
-    
-    // Get all BurstKeyConsumed events
-    const consumedFilter = contract.filters.BurstKeyConsumed();
-    const consumedEvents = await contract.queryFilter(consumedFilter);
-    
-    // Combine and format all events
-    // Fetch actual block timestamps from BlockDAG
     const allEvents = [];
+    const contractAddress = process.env.CONTRACT_ADDRESS.toLowerCase();
     
-    // Helper function to get block timestamp
-    const getBlockTimestamp = async (blockNumber) => {
-      try {
-        const block = await provider.getBlock(blockNumber);
-        // BlockDAG timestamps are in seconds, convert to milliseconds
-        return new Date(block.timestamp * 1000).toISOString();
-      } catch (error) {
-        console.warn(`⚠️  [BLOCKCHAIN] Failed to get block ${blockNumber} timestamp:`, error.message);
-        // Fallback to current time if block fetch fails
-        return new Date().toISOString();
+    // Get current block number
+    const currentBlock = await provider.getBlockNumber();
+    console.log(`📊 [BLOCKCHAIN] Current block: ${currentBlock}`);
+    
+    // Scan blocks based on environment variable or default to 1,000,000 blocks
+    // 1,000,000 blocks = ~115 days with 10s blocks (covers since October)
+    // Configure BLOCKCHAIN_SCAN_BLOCKS env var for different ranges
+    const blocksToScan = parseInt(process.env.BLOCKCHAIN_SCAN_BLOCKS || '1000000');
+    const startBlock = Math.max(0, currentBlock - blocksToScan);
+    
+    console.log(`🔍 [BLOCKCHAIN] Scanning blocks ${startBlock} to ${currentBlock} (${blocksToScan.toLocaleString()} blocks)...`);
+    console.log(`📅 [BLOCKCHAIN] This covers approximately ${Math.round(blocksToScan * 10 / 86400)} days of history`);
+    
+    // Batch process blocks in chunks to avoid overwhelming the RPC
+    const batchSize = 100;
+    let processedBlocks = 0;
+    
+    for (let i = startBlock; i <= currentBlock; i += batchSize) {
+      const endBlock = Math.min(i + batchSize - 1, currentBlock);
+      
+      // Process each block in the batch
+      for (let blockNum = i; blockNum <= endBlock; blockNum++) {
+        try {
+          // Get block with transactions
+          const block = await provider.getBlock(blockNum, true);
+          
+          if (!block || !block.transactions || block.transactions.length === 0) {
+            continue;
+          }
+          
+          // Check each transaction in the block
+          for (const tx of block.transactions) {
+            // Skip if not a transaction object or not to our contract
+            if (!tx.to || tx.to.toLowerCase() !== contractAddress) {
+              continue;
+            }
+            
+            try {
+              // Get transaction receipt to parse logs
+              const receipt = await provider.getTransactionReceipt(tx.hash);
+              
+              if (!receipt || !receipt.logs || receipt.logs.length === 0) {
+                continue;
+              }
+              
+              // Parse logs for our events
+              for (const log of receipt.logs) {
+                if (log.address.toLowerCase() !== contractAddress) {
+                  continue;
+                }
+                
+                const timestamp = new Date(block.timestamp * 1000).toISOString();
+                
+                try {
+                  // Parse the log using contract interface
+                  const parsedLog = contract.interface.parseLog({
+                    topics: log.topics,
+                    data: log.data
+                  });
+                  
+                  // Handle different event types
+                  if (parsedLog.name === 'CapsuleCreated') {
+                    allEvents.push({
+                      type: 'CapsuleCreated',
+                      txHash: tx.hash,
+                      blockNumber: blockNum,
+                      timestamp: timestamp,
+                      capsuleId: parsedLog.args.id.toString(),
+                      capsuleHash: parsedLog.args.capsuleHash,
+                      capsuleType: parsedLog.args.capsuleType,
+                      owner: parsedLog.args.owner
+                    });
+                  } else if (parsedLog.name === 'BurstKeyIssued') {
+                    allEvents.push({
+                      type: 'BurstKeyIssued',
+                      txHash: tx.hash,
+                      blockNumber: blockNum,
+                      timestamp: timestamp,
+                      burstId: parsedLog.args.burstId.toString(),
+                      capsuleId: parsedLog.args.capsuleId.toString(),
+                      accessor: parsedLog.args.accessor,
+                      expiresAt: parsedLog.args.expiresAt.toString(),
+                      contextHash: parsedLog.args.contextHash
+                    });
+                  } else if (parsedLog.name === 'BurstKeyConsumed') {
+                    allEvents.push({
+                      type: 'BurstKeyConsumed',
+                      txHash: tx.hash,
+                      blockNumber: blockNum,
+                      timestamp: timestamp,
+                      burstId: parsedLog.args.burstId.toString()
+                    });
+                  }
+                } catch (parseError) {
+                  // Silently skip unparseable logs
+                }
+              }
+            } catch (txError) {
+              console.warn(`⚠️  [BLOCKCHAIN] Failed to process tx ${tx.hash}:`, txError.message);
+            }
+          }
+          
+          processedBlocks++;
+          
+          // Progress indicator every 1000 blocks
+          if (processedBlocks % 1000 === 0) {
+            console.log(`📊 [BLOCKCHAIN] Scanned ${processedBlocks} blocks, found ${allEvents.length} events`);
+          }
+        } catch (blockError) {
+          console.warn(`⚠️  [BLOCKCHAIN] Failed to get block ${blockNum}:`, blockError.message);
+        }
       }
-    };
-    
-    // Process capsule events
-    for (const event of capsuleEvents) {
-      const timestamp = await getBlockTimestamp(event.blockNumber);
-      allEvents.push({
-        type: 'CapsuleCreated',
-        txHash: event.transactionHash,
-        blockNumber: event.blockNumber,
-        timestamp: timestamp,
-        capsuleId: event.args.id.toString(),
-        capsuleHash: event.args.capsuleHash,
-        capsuleType: event.args.capsuleType,
-        owner: event.args.owner,
-        event: event
-      });
-    }
-    
-    // Process burst key events
-    for (const event of burstKeyEvents) {
-      const timestamp = await getBlockTimestamp(event.blockNumber);
-      allEvents.push({
-        type: 'BurstKeyIssued',
-        txHash: event.transactionHash,
-        blockNumber: event.blockNumber,
-        timestamp: timestamp,
-        burstId: event.args.burstId.toString(),
-        capsuleId: event.args.capsuleId.toString(),
-        accessor: event.args.accessor,
-        expiresAt: event.args.expiresAt.toString(),
-        contextHash: event.args.contextHash,
-        event: event
-      });
-    }
-    
-    // Process consumed events
-    for (const event of consumedEvents) {
-      const timestamp = await getBlockTimestamp(event.blockNumber);
-      allEvents.push({
-        type: 'BurstKeyConsumed',
-        txHash: event.transactionHash,
-        blockNumber: event.blockNumber,
-        timestamp: timestamp,
-        burstId: event.args.burstId.toString(),
-        event: event
-      });
+      
+      // Small delay between batches to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
     
     // Sort by block number (newest first)
     allEvents.sort((a, b) => b.blockNumber - a.blockNumber);
     
-    console.log(`📋 [BLOCKCHAIN] Retrieved ${allEvents.length} blockchain events`);
+    console.log(`✅ [BLOCKCHAIN] Retrieved ${allEvents.length} blockchain events from ${processedBlocks} blocks`);
     
     return allEvents;
   } catch (error) {
     console.error('❌ [BLOCKCHAIN] Failed to get blockchain transactions:', error.message);
     return [];
   }
+}
+
+/**
+ * Parse transactions from explorer API response
+ */
+async function parseExplorerTransactions(transactions) {
+  const allEvents = [];
+  
+  for (const tx of transactions) {
+    try {
+      // Get transaction receipt to parse logs
+      const receipt = await provider.getTransactionReceipt(tx.hash);
+      
+      if (!receipt || !receipt.logs || receipt.logs.length === 0) {
+        continue;
+      }
+      
+      // Parse logs for our events
+      for (const log of receipt.logs) {
+        if (log.address.toLowerCase() !== process.env.CONTRACT_ADDRESS.toLowerCase()) {
+          continue;
+        }
+        
+        try {
+          const parsedLog = contract.interface.parseLog({
+            topics: log.topics,
+            data: log.data
+          });
+          
+          const timestamp = new Date(parseInt(tx.timeStamp) * 1000).toISOString();
+          
+          if (parsedLog.name === 'CapsuleCreated') {
+            allEvents.push({
+              type: 'CapsuleCreated',
+              txHash: tx.hash,
+              blockNumber: parseInt(tx.blockNumber),
+              timestamp: timestamp,
+              capsuleId: parsedLog.args.id.toString(),
+              capsuleHash: parsedLog.args.capsuleHash,
+              capsuleType: parsedLog.args.capsuleType,
+              owner: parsedLog.args.owner
+            });
+          } else if (parsedLog.name === 'BurstKeyIssued') {
+            allEvents.push({
+              type: 'BurstKeyIssued',
+              txHash: tx.hash,
+              blockNumber: parseInt(tx.blockNumber),
+              timestamp: timestamp,
+              burstId: parsedLog.args.burstId.toString(),
+              capsuleId: parsedLog.args.capsuleId.toString(),
+              accessor: parsedLog.args.accessor,
+              expiresAt: parsedLog.args.expiresAt.toString(),
+              contextHash: parsedLog.args.contextHash
+            });
+          } else if (parsedLog.name === 'BurstKeyConsumed') {
+            allEvents.push({
+              type: 'BurstKeyConsumed',
+              txHash: tx.hash,
+              blockNumber: parseInt(tx.blockNumber),
+              timestamp: timestamp,
+              burstId: parsedLog.args.burstId.toString()
+            });
+          }
+        } catch (parseError) {
+          // Skip unparseable logs
+        }
+      }
+    } catch (error) {
+      console.warn(`⚠️  [BLOCKCHAIN] Failed to process tx ${tx.hash}`);
+    }
+  }
+  
+  // Sort by block number (newest first)
+  allEvents.sort((a, b) => b.blockNumber - a.blockNumber);
+  
+  console.log(`✅ [BLOCKCHAIN] Parsed ${allEvents.length} events from explorer data`);
+  return allEvents;
 }
 
 /**

@@ -11,6 +11,7 @@ const { issueBurstKey, verifyAndConsumeBurstKey, getCapsuleBurstKeys, updateBurs
 const { computeCanonicalHash } = require('./utils/hash');
 const { addPendingTransaction, updateTransactionStatus, getCapsuleTransactions, getQueueStats } = require('./utils/transactionQueue');
 const { logRestrictedAccessAttempt, logActiveKeyBlocked, logBurstKeyIssued, logBurstKeyConsumed, getCapsuleAuditLog } = require('./utils/auditLog');
+const { getChatResponse } = require('./services/aiService');
 
 // Initialize Firebase
 try {
@@ -63,20 +64,46 @@ const axios = require('axios');
 // Mount routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
-// Minimal AI chat endpoint (proxy or stub)
+
+// EverGuard Guardian AI chat endpoint
 app.post('/api/ai/chat/enhanced', async (req, res) => {
   try {
-    const { message } = req.body || {};
+    const { message, sessionId } = req.body || {};
+    
     if (!message) {
-      return res.status(400).json({ success: false, error: 'Missing field: message' });
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Missing field: message' 
+      });
     }
-    // Stub response for now; integrate real LLM later
-    const suggestions = ['Ask another question', 'Learn about security', 'Get emergency help'];
-    const canned = `Here to help. You asked: "${message}". For emergencies, use the PulseKey feature. Your data is protected with encryption and on-chain audit logs.`;
-    return res.json({ success: true, response: canned, suggestions });
+    
+    // Use sessionId from client, or generate one based on IP (for anonymous users)
+    const chatSessionId = sessionId || req.ip || 'default';
+    
+    console.log('🤖 [AI] Processing message for session:', chatSessionId.substring(0, 10) + '...');
+    
+    // Get AI response from Gemini service with conversation context
+    const aiResult = await getChatResponse(message, chatSessionId);
+    
+    return res.json({ 
+      success: true, 
+      response: aiResult.response, 
+      suggestions: aiResult.suggestions,
+      sessionId: chatSessionId
+    });
+    
   } catch (error) {
     console.error('❌ [AI] Error:', error.message);
-    return res.status(500).json({ success: false, error: 'AI service unavailable' });
+    
+    // Return helpful fallback
+    return res.status(500).json({ 
+      success: false, 
+      error: 'AI service temporarily unavailable',
+      fallback: {
+        response: 'The Guardian AI is currently offline, but your data remains secure. Please try again in a moment, or explore the EverGuard features directly.',
+        suggestions: ['View my capsules', 'Check emergency access', 'Review security features']
+      }
+    });
   }
 });
 

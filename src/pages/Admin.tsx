@@ -562,7 +562,7 @@ export default function Admin() {
                           <div className="mt-2 text-xs space-y-1 max-h-[150px] overflow-y-auto">
                             {importResult.details.map((d, i) => (
                               <div key={i} className="font-mono">
-                                {d.txHash.substring(0, 10)}... - {d.status}
+                                {d.txHash?.substring(0, 10) || 'Unknown'}... - {d.status}
                                 {d.reason && ` (${d.reason})`}
                               </div>
                             ))}
@@ -574,12 +574,18 @@ export default function Admin() {
                 </Card>
                 
                 {/* Transaction Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                  <Card className="p-4">
+                    <div className="text-2xl font-bold text-purple-600">
+                      {transactions.filter(tx => tx.source === 'contract_query').length}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Contract Data</div>
+                  </Card>
                   <Card className="p-4">
                     <div className="text-2xl font-bold text-blue-600">
-                      {transactions.filter(tx => tx.source === 'blockchain').length}
+                      {transactions.filter(tx => tx.txHash && tx.source !== 'contract_query').length}
                     </div>
-                    <div className="text-sm text-muted-foreground">Blockchain Events</div>
+                    <div className="text-sm text-muted-foreground">With TX Hash</div>
                   </Card>
                   <Card className="p-4">
                     <div className="text-2xl font-bold text-orange-600">
@@ -611,8 +617,8 @@ export default function Admin() {
                       {transactions.map((tx, index) => (
                         <tr key={tx.txId || index} className="border-b hover:bg-muted/50">
                           <td className="p-2">
-                            <Badge variant={tx.source === 'blockchain' ? 'default' : 'secondary'}>
-                              {tx.source}
+                            <Badge variant={tx.source === 'contract_query' ? 'default' : tx.source === 'firestore' ? 'outline' : 'secondary'}>
+                              {tx.source === 'contract_query' ? 'contract' : tx.source}
                             </Badge>
                           </td>
                           <td className="p-2">
@@ -623,15 +629,21 @@ export default function Admin() {
                             </Badge>
                           </td>
                           <td className="p-2">
-                            <a
-                              href={`${BLOCKDAG_EXPLORER}/tx/${tx.txHash}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline flex items-center gap-1 font-mono text-xs"
-                            >
-                              {tx.txHash.substring(0, 10)}...{tx.txHash.substring(tx.txHash.length - 8)}
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
+                            {tx.txHash ? (
+                              <a
+                                href={`${BLOCKDAG_EXPLORER}/tx/${tx.txHash}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:underline flex items-center gap-1 font-mono text-xs"
+                              >
+                                {tx.txHash.substring(0, 10)}...{tx.txHash.substring(tx.txHash.length - 8)}
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">
+                                Contract Data (ID: {tx.metadata?.capsuleId || tx.metadata?.burstId || 'N/A'})
+                              </span>
+                            )}
                           </td>
                           <td className="p-2">
                             <div className="flex items-center gap-2">
@@ -649,7 +661,7 @@ export default function Admin() {
                               <div>Burst: {tx.metadata.burstId}</div>
                             )}
                             {tx.metadata?.accessor && (
-                              <div>Accessor: {tx.metadata.accessor.substring(0, 10)}...</div>
+                              <div>Accessor: {tx.metadata.accessor?.substring(0, 10) || tx.metadata.accessor}...</div>
                             )}
                             {tx.blockNumber && (
                               <div>Block: {tx.blockNumber}</div>

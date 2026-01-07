@@ -490,6 +490,122 @@ async function getCapsuleFromContract(capsuleId) {
 }
 
 /**
+ * Get ALL capsules and burst key data directly from contract
+ * This is the reliable way to get blockchain data when eth_getLogs is unsupported
+ */
+async function getAllContractData() {
+  try {
+    if (!contract) {
+      throw new Error('Contract not initialized');
+    }
+    
+    console.log('🔍 [BLOCKCHAIN] Querying contract directly for all data...');
+    
+    const capsules = [];
+    const burstKeyUsage = [];
+    let consecutiveFails = 0;
+    
+    // Query capsules directly (IDs 1 to 200)
+    for (let i = 1; i <= 200 && consecutiveFails < 5; i++) {
+      try {
+        const capsule = await contract.getCapsule(i);
+        if (capsule && capsule.id && capsule.id.toString() !== '0') {
+          const capsuleData = {
+            id: Number(capsule.id),
+            capsuleHash: capsule.capsuleHash,
+            timestamp: new Date(Number(capsule.timestamp) * 1000).toISOString(),
+            capsuleType: capsule.capsuleType,
+            owner: capsule.owner,
+            status: Number(capsule.status)
+          };
+          capsules.push(capsuleData);
+          consecutiveFails = 0;
+          
+          // Get access log for this capsule
+          try {
+            const accessLog = await contract.getCapsuleAccessLog(i);
+            if (accessLog && accessLog.length > 0) {
+              accessLog.forEach(burstId => {
+                burstKeyUsage.push({
+                  capsuleId: Number(capsule.id),
+                  burstKeyId: Number(burstId),
+                  timestamp: capsuleData.timestamp
+                });
+              });
+            }
+          } catch (e) {
+            // No access log or error - continue
+          }
+        } else {
+          consecutiveFails++;
+        }
+      } catch (e) {
+        consecutiveFails++;
+      }
+    }
+    
+    // Create transaction-like records
+    const transactions = [];
+    
+    // Add capsule creations
+    capsules.forEach(capsule => {
+      transactions.push({
+        txId: `capsule_${capsule.id}`,
+        type: 'CapsuleCreated',
+        txHash: null, // No hash available from direct query
+        status: 'confirmed',
+        source: 'contract',
+        blockNumber: null,
+        metadata: {
+          capsuleId: capsule.id.toString(),
+          capsuleHash: capsule.capsuleHash,
+          capsuleType: capsule.capsuleType,
+          owner: capsule.owner
+        },
+        createdAt: capsule.timestamp
+      });
+    });
+    
+    // Add burst key usages
+    burstKeyUsage.forEach(usage => {
+      transactions.push({
+        txId: `burstkey_${usage.burstKeyId}_capsule_${usage.capsuleId}`,
+        type: 'BurstKeyUsed',
+        txHash: null,
+        status: 'confirmed',
+        source: 'contract',
+        blockNumber: null,
+        metadata: {
+          capsuleId: usage.capsuleId.toString(),
+          burstKeyId: usage.burstKeyId.toString()
+        },
+        createdAt: usage.timestamp
+      });
+    });
+    
+    // Sort by date (newest first)
+    transactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    console.log(`✅ [BLOCKCHAIN] Found ${capsules.length} capsules and ${burstKeyUsage.length} burst key events`);
+    
+    return {
+      success: true,
+      capsules,
+      burstKeyUsage,
+      transactions,
+      summary: {
+        totalCapsules: capsules.length,
+        totalBurstKeys: burstKeyUsage.length,
+        totalTransactions: transactions.length
+      }
+    };
+  } catch (error) {
+    console.error('❌ [BLOCKCHAIN] Failed to get contract data:', error.message);
+    return { success: false, error: error.message, transactions: [] };
+  }
+}
+
+/**
  * Parse transactions from explorer API response
  */
 async function parseExplorerTransactions(transactions) {
@@ -596,6 +712,7 @@ module.exports = {
   getAllBlockchainTransactions,
   getTransactionByHash,
   getCapsuleFromContract,
+  getAllContractData,
   getConnectionStatus,
   provider,
   contract,

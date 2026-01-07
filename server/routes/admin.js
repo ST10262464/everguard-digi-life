@@ -2,7 +2,7 @@ const express = require('express');
 const { getFirestore, COLLECTIONS } = require('../config/firebase');
 const { getBurstKeyStatus, BURST_KEY_STATUS } = require('../utils/burstKey');
 const { getQueueStats, getAllTransactions, getHistoricalTransactions } = require('../utils/transactionQueue');
-const { getAllBlockchainTransactions, getTransactionByHash } = require('../blockchain');
+const { getAllBlockchainTransactions, getTransactionByHash, getAllContractData } = require('../blockchain');
 
 const router = express.Router();
 
@@ -205,7 +205,7 @@ router.get('/medics', async (req, res) => {
 
 /**
  * GET /api/admin/transactions
- * Get all blockchain transactions (queue + Firestore historical + blockchain scan)
+ * Get all blockchain transactions (queue + Firestore + contract direct query)
  */
 router.get('/transactions', async (req, res) => {
   try {
@@ -216,27 +216,24 @@ router.get('/transactions', async (req, res) => {
     // Get historical transactions from Firestore
     const firestoreTransactions = await getHistoricalTransactions(200);
     
-    // Get blockchain events with timeout (don't block the response)
-    let blockchainEvents = [];
+    // Get contract data directly (reliable, no block scanning)
+    let contractData = { transactions: [], summary: {} };
     try {
-      // Set a 5-second timeout for blockchain scanning
-      const blockchainPromise = getAllBlockchainTransactions();
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Blockchain scan timeout')), 5000)
-      );
-      
-      blockchainEvents = await Promise.race([blockchainPromise, timeoutPromise]);
-    } catch (scanError) {
-      console.warn('⚠️  [ADMIN] Blockchain scan timed out or failed, using Firestore data only:', scanError.message);
-      // Continue with Firestore data only
+      const result = await getAllContractData();
+      if (result.success) {
+        contractData = result;
+      }
+    } catch (contractError) {
+      console.warn('⚠️  [ADMIN] Contract query failed:', contractError.message);
     }
     
-    // Map to track unique transactions by txHash
+    // Map to track unique transactions by txId
     const transactionMap = new Map();
     
     // Add queue transactions (highest priority - most recent status)
     queueTransactions.forEach(tx => {
-      transactionMap.set(tx.txHash, {
+      const key = tx.txHash || tx.txId;
+      transactionMap.set(key, {
         ...tx,
         source: 'queue',
         status: tx.status || 'pending',
@@ -244,10 +241,11 @@ router.get('/transactions', async (req, res) => {
       });
     });
     
-    // Add Firestore historical transactions (don't overwrite queue items)
+    // Add Firestore historical transactions
     firestoreTransactions.forEach(tx => {
-      if (!transactionMap.has(tx.txHash)) {
-        transactionMap.set(tx.txHash, {
+      const key = tx.txHash || tx.txId;
+      if (!transactionMap.has(key)) {
+        transactionMap.set(key, {
           txId: tx.txId,
           type: tx.type,
           txHash: tx.txHash,
@@ -261,25 +259,11 @@ router.get('/transactions', async (req, res) => {
       }
     });
     
-    // Add blockchain events (only if not already in queue or Firestore)
-    blockchainEvents.forEach(event => {
-      if (!transactionMap.has(event.txHash)) {
-        transactionMap.set(event.txHash, {
-          txId: event.txHash,
-          type: event.type,
-          txHash: event.txHash,
-          status: 'confirmed',
-          source: 'blockchain',
-          blockNumber: event.blockNumber,
-          timestamp: event.timestamp,
-          metadata: {
-            capsuleId: event.capsuleId,
-            burstId: event.burstId,
-            accessor: event.accessor,
-            owner: event.owner
-          },
-          createdAt: event.timestamp
-        });
+    // Add contract data (capsules and burst keys from direct query)
+    contractData.transactions.forEach(tx => {
+      const key = tx.txId;
+      if (!transactionMap.has(key)) {
+        transactionMap.set(key, tx);
       }
     });
     
@@ -299,7 +283,8 @@ router.get('/transactions', async (req, res) => {
       transactions: allTransactions,
       stats: {
         ...queueStats,
-        blockchainEvents: blockchainEvents.length,
+        contractCapsules: contractData.summary?.totalCapsules || 0,
+        contractBurstKeys: contractData.summary?.totalBurstKeys || 0,
         firestoreTransactions: firestoreTransactions.length,
         queueTransactions: queueTransactions.length,
         totalUnique: allTransactions.length

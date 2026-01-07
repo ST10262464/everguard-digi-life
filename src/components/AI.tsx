@@ -210,9 +210,9 @@ How can I support you today?`,
         </Card>
 
         {/* Chat Container */}
-        <Card className="flex flex-col h-[70vh]">
+        <Card className="flex flex-col overflow-hidden">
           {/* Chat Header */}
-          <CardHeader className="border-b">
+          <CardHeader className="border-b flex-shrink-0">
             <div className="flex justify-between items-center">
               <div className="flex items-center space-x-3">
                 <Avatar className="bg-primary">
@@ -234,9 +234,9 @@ How can I support you today?`,
           </CardHeader>
 
           {/* Messages */}
-          <CardContent className="flex-1 p-0">
-            <ScrollArea className="h-full p-4">
-              <div className="space-y-4">
+          <CardContent className="flex-shrink-0 p-0">
+            <ScrollArea className="h-[50vh] p-4">
+              <div className="space-y-4 pb-4">
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -316,10 +316,10 @@ How can I support you today?`,
             </ScrollArea>
           </CardContent>
 
-          <Separator />
+          <Separator className="flex-shrink-0" />
 
           {/* Input */}
-          <CardContent className="p-4">
+          <CardContent className="p-4 flex-shrink-0">
             <div className="flex gap-2 items-end">
               <Textarea
                 value={inputMessage}
@@ -347,18 +347,18 @@ How can I support you today?`,
 
         {/* Error Alert */}
         {error && (
-          <Alert variant="destructive" className="mb-4">
+          <Alert variant="destructive" className="mt-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
+      </div>
 
-        {/* Footer - Compact emergency info */}
-        <div className="mt-6 pb-8">
-          <p className="text-center text-xs text-muted-foreground leading-relaxed">
-            🚨 Emergency: <strong className="text-destructive">0800 428 428</strong> • <strong className="text-destructive">10111</strong> • <strong className="text-destructive">112</strong>
-          </p>
-        </div>
+      {/* Emergency Footer - OUTSIDE chat container */}
+      <div className="max-w-4xl mx-auto mt-6 pb-8">
+        <p className="text-center text-xs text-muted-foreground leading-relaxed">
+          🚨 Emergency: <strong className="text-destructive">0800 428 428</strong> • <strong className="text-destructive">10111</strong> • <strong className="text-destructive">112</strong>
+        </p>
       </div>
     </div>
   );

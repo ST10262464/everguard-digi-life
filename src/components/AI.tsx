@@ -237,7 +237,7 @@ How can I support you today?`,
 
           {/* Messages */}
           <CardContent className="flex-shrink-0 p-0">
-            <ScrollArea className="h-[50vh] p-4">
+            <ScrollArea className={`p-4 transition-all duration-300 ${messages.length === 1 ? 'h-[50vh]' : 'h-[65vh]'}`}>
               <div className="space-y-4 pb-4">
                 {messages.map((message) => (
                   <div

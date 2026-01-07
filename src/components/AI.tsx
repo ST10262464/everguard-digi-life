@@ -32,6 +32,19 @@ import { API_URL } from '@/config/api';
  */
 const EverGuardGuardianPage = () => {
   const { t } = useTranslation();
+  
+  // Generate a persistent session ID for this chat session
+  const [sessionId] = useState(() => {
+    // Try to get existing session from localStorage
+    const stored = localStorage.getItem('everguard_ai_session');
+    if (stored) return stored;
+    
+    // Generate new session ID
+    const newId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    localStorage.setItem('everguard_ai_session', newId);
+    return newId;
+  });
+  
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -132,7 +145,8 @@ What would you like to know?`,
 
     try {
       const response = await axios.post(`${API_URL}/api/ai/chat/enhanced`, {
-        message: inputMessage
+        message: inputMessage,
+        sessionId: sessionId  // ✅ Send persistent sessionId
       });
 
       const botMessage = {

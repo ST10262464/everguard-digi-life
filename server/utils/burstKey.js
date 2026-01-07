@@ -210,7 +210,7 @@ async function getCapsuleBurstKeys(capsuleId) {
 /**
  * Update BurstKey with blockchain ID
  */
-async function updateBurstKeyBlockchainId(burstKey, blockchainBurstKeyId) {
+async function updateBurstKeyBlockchainId(burstKey, blockchainBurstKeyId, txHash = null) {
   try {
     const db = getFirestore();
     const doc = await db.collection(COLLECTIONS.BURST_KEYS).doc(burstKey).get();
@@ -219,12 +219,18 @@ async function updateBurstKeyBlockchainId(burstKey, blockchainBurstKeyId) {
       throw new Error('BurstKey not found');
     }
     
-    await db.collection(COLLECTIONS.BURST_KEYS).doc(burstKey).update({
+    const updateData = {
       blockchainBurstKeyId: blockchainBurstKeyId
-    });
+    };
+    
+    if (txHash) {
+      updateData.blockchainTxHash = txHash;
+    }
+    
+    await db.collection(COLLECTIONS.BURST_KEYS).doc(burstKey).update(updateData);
     
     const burstKeyData = doc.data();
-    console.log(`🔗 [BURSTKEY] Updated blockchain ID for ${burstKeyData.burstId}: ${blockchainBurstKeyId}`);
+    console.log(`🔗 [BURSTKEY] Updated blockchain ID for ${burstKeyData.burstId}: ${blockchainBurstKeyId}${txHash ? ` (tx: ${txHash})` : ''}`);
     
     // Return updated data
     const updated = await db.collection(COLLECTIONS.BURST_KEYS).doc(burstKey).get();

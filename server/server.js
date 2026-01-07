@@ -181,9 +181,9 @@ app.post('/api/capsules', optionalAuth, async (req, res) => {
           contentHash: capsule.contentHash
         });
         
-        // Update capsule with blockchain ID
+        // Update capsule with blockchain ID and txHash
         if (blockchainResult && blockchainResult.capsuleId !== null) {
-          await updateCapsuleBlockchainId(capsule.id, blockchainResult.capsuleId);
+          await updateCapsuleBlockchainId(capsule.id, blockchainResult.capsuleId, blockchainResult.txHash);
           updateTransactionStatus(queuedTx.txId, 'confirmed', blockchainResult);
         }
       } catch (blockchainError) {
@@ -499,9 +499,9 @@ app.post('/api/emergency/request-access', async (req, res) => {
             burstId: burstKeyResult.burstId
           });
           
-          // Update BurstKey with blockchain ID
+          // Update BurstKey with blockchain ID and txHash
           if (blockchainResult.burstKeyId) {
-            await updateBurstKeyBlockchainId(burstKeyResult.burstKey, blockchainResult.burstKeyId);
+            await updateBurstKeyBlockchainId(burstKeyResult.burstKey, blockchainResult.burstKeyId, blockchainResult.txHash);
             updateTransactionStatus(queuedTx.txId, 'confirmed', blockchainResult);
           }
         }

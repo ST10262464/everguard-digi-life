@@ -212,7 +212,7 @@ async function getAllCapsules() {
 /**
  * Update capsule with blockchain ID
  */
-async function updateCapsuleBlockchainId(capsuleId, blockchainId) {
+async function updateCapsuleBlockchainId(capsuleId, blockchainId, txHash = null) {
   try {
     const db = getFirestore();
     const capsuleRef = db.collection(COLLECTIONS.CAPSULES).doc(capsuleId);
@@ -222,12 +222,18 @@ async function updateCapsuleBlockchainId(capsuleId, blockchainId) {
       throw new Error('Capsule not found');
     }
     
-    await capsuleRef.update({
+    const updateData = {
       blockchainId: blockchainId,
       updatedAt: new Date().toISOString()
-    });
+    };
     
-    console.log(`🔗 [CAPSULE] Updated blockchain ID for ${capsuleId}: ${blockchainId}`);
+    if (txHash) {
+      updateData.blockchainTxHash = txHash;
+    }
+    
+    await capsuleRef.update(updateData);
+    
+    console.log(`🔗 [CAPSULE] Updated blockchain ID for ${capsuleId}: ${blockchainId}${txHash ? ` (tx: ${txHash})` : ''}`);
     
     // Return updated capsule
     const updated = await capsuleRef.get();

@@ -184,30 +184,32 @@ How can I support you today?`,
           </div>
         </div>
 
-        {/* Quick Questions - Key EverGuard Features */}
-        <Card className="border-2 border-primary/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-xl flex items-center gap-2">
-              <Lightbulb className="w-5 h-5 text-primary" />
-              Quick Topics - Ask About EverGuard Features
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {quickQuestions.map((question, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  className="justify-start h-auto py-3 px-4 text-left hover:bg-primary hover:text-primary-foreground transition-all"
-                  onClick={() => handleQuickQuestion(question)}
-                >
-                  <MessageCircle className="w-4 h-4 mr-2 flex-shrink-0" />
-                  <span className="text-sm">{question}</span>
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Quick Questions - Only show before conversation starts */}
+        {messages.length === 1 && (
+          <Card className="border-2 border-primary/20 animate-in fade-in duration-300">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-xl flex items-center gap-2">
+                <Lightbulb className="w-5 h-5 text-primary" />
+                Quick Topics - Ask About EverGuard Features
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {quickQuestions.map((question, index) => (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    className="justify-start h-auto py-3 px-4 text-left hover:bg-primary hover:text-primary-foreground transition-all"
+                    onClick={() => handleQuickQuestion(question)}
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+                    <span className="text-sm">{question}</span>
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Chat Container */}
         <Card className="flex flex-col overflow-hidden">

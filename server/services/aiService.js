@@ -36,8 +36,14 @@ function initializeAI() {
   
   try {
     genAI = new GoogleGenerativeAI(apiKey);
-    model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    console.log('✅ [AI] Gemini AI initialized successfully');
+    model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.0-flash',
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 500,
+      }
+    });
+    console.log('✅ [AI] Gemini AI initialized successfully with gemini-2.0-flash');
     return true;
   } catch (error) {
     console.error('❌ [AI] Failed to initialize Gemini:', error.message);
@@ -156,7 +162,7 @@ function getFallbackResponse(message) {
   
   if (lowerMessage.includes('emergency') || lowerMessage.includes('pulsekey') || lowerMessage.includes('burstkey')) {
     return {
-      response: `**Emergency Access with PulseKeys**\n\nPulseKeys (BurstKeys) are time-limited access tokens that allow verified medical professionals to access your health data during emergencies. Here's how they work:\n\n1. A verified doctor requests emergency access\n2. System issues a single-use PulseKey (valid for 10 minutes)\n3. Doctor uses the key to decrypt your capsule\n4. Key automatically expires after use\n5. All access is logged on the blockchain\n\nYour data remains secure while being accessible when it matters most.`,
+      response: `Emergency Access with PulseKeys\n\nPulseKeys (BurstKeys) are time-limited access tokens that allow verified medical professionals to access your health data during emergencies. Here's how they work:\n\n1. A verified doctor requests emergency access\n2. System issues a single-use PulseKey (valid for 10 minutes)\n3. Doctor uses the key to decrypt your capsule\n4. Key automatically expires after use\n5. All access is logged on the blockchain\n\nYour data remains secure while being accessible when it matters most.`,
       suggestions: [
         'How are doctors verified?',
         'What data can emergency responders see?',
@@ -167,7 +173,7 @@ function getFallbackResponse(message) {
   
   if (lowerMessage.includes('secure') || lowerMessage.includes('encrypt') || lowerMessage.includes('safe')) {
     return {
-      response: `**Your Data Security**\n\nEverGuard uses multiple layers of security:\n\n🔐 **End-to-End Encryption**: Your data is encrypted before it leaves your device\n🔑 **Your Keys, Your Control**: Only you hold the decryption keys\n⛓️ **Blockchain Verification**: All actions recorded on immutable BlockDAG ledger\n🚫 **Zero-Knowledge**: We can't read your data - only you can\n\nYour medical information is protected by the same technology securing financial institutions.`,
+      response: `Your Data Security\n\nEverGuard uses multiple layers of security:\n\n🔐 End-to-End Encryption: Your data is encrypted before it leaves your device\n🔑 Your Keys, Your Control: Only you hold the decryption keys\n⛓️ Blockchain Verification: All actions recorded on immutable BlockDAG ledger\n🚫 Zero-Knowledge: We can't read your data - only you can\n\nYour medical information is protected by the same technology securing financial institutions.`,
       suggestions: [
         'What is blockchain verification?',
         'How do emergency access work securely?',
@@ -178,7 +184,7 @@ function getFallbackResponse(message) {
   
   if (lowerMessage.includes('capsule')) {
     return {
-      response: `**Digital Capsules**\n\nCapsules are encrypted containers for your health data. You can store:\n\n📋 Medical records and test results\n💊 Prescriptions and medication lists\n🏥 Hospital discharge summaries\n🔬 Lab reports and imaging results\n\nEach capsule is encrypted with your personal key and its hash is stored on the blockchain for verification. You decide who gets access and when.`,
+      response: `Digital Capsules\n\nCapsules are encrypted containers for your health data. You can store:\n\n📋 Medical records and test results\n💊 Prescriptions and medication lists\n🏥 Hospital discharge summaries\n🔬 Lab reports and imaging results\n\nEach capsule is encrypted with your personal key and its hash is stored on the blockchain for verification. You decide who gets access and when.`,
       suggestions: [
         'How do I create a capsule?',
         'Can I share my capsule?',
@@ -189,7 +195,7 @@ function getFallbackResponse(message) {
   
   // Default response
   return {
-    response: `**Welcome to EverGuard Guardian AI**\n\nI'm here to help you understand how to securely store and manage your health data. EverGuard combines encryption, blockchain technology, and emergency access protocols to keep your medical information both secure and accessible when needed.\n\nKey features:\n- 🔐 Encrypted digital capsules for your health records\n- ⚡ PulseKey emergency access system\n- 🆘 ICE (In Case of Emergency) data\n- ⛓️ Blockchain verification and audit trails\n\nHow can I help you today?`,
+    response: `Welcome to EverGuard Guardian AI\n\nI'm here to help you understand how to securely store and manage your health data. EverGuard combines encryption, blockchain technology, and emergency access protocols to keep your medical information both secure and accessible when needed.\n\nKey features:\n- 🔐 Encrypted digital capsules for your health records\n- ⚡ PulseKey emergency access system\n- 🆘 ICE (In Case of Emergency) data\n- ⛓️ Blockchain verification and audit trails\n\nHow can I help you today?`,
     suggestions: [
       'How does emergency access work?',
       'How is my data protected?',
@@ -247,7 +253,14 @@ async function getChatResponse(message, sessionId = 'default', conversationHisto
     
     // Send message and get response
     const result = await chat.sendMessage(contextualMessage);
-    const aiResponse = result.response.text();
+    let aiResponse = result.response.text();
+    
+    // Remove markdown formatting (asterisks, etc.)
+    aiResponse = aiResponse
+      .replace(/\*\*/g, '')  // Remove bold **text**
+      .replace(/\*/g, '')    // Remove italic *text*
+      .replace(/#{1,6}\s/g, '') // Remove headers
+      .replace(/`/g, '');    // Remove code backticks
     
     // Generate contextual suggestions
     const suggestions = generateSuggestions(message);

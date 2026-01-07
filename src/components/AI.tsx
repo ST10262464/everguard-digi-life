@@ -339,23 +339,23 @@ How can I support you today?`,
           </CardContent>
         </Card>
 
-        {/* Footer */}
-        <div className="text-center">
-          <Alert>
-            <MessageCircle className="h-4 w-4" />
-            <AlertDescription>
-              Need emergency help? Call 0800 428 428 (GBV Command Centre) • 10111 (Police) • 112 (Medical)
-            </AlertDescription>
-          </Alert>
-        </div>
-
         {/* Error Alert */}
         {error && (
-          <Alert variant="destructive">
+          <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
+
+        {/* Footer - Fixed to bottom with proper spacing */}
+        <div className="mt-4 mb-8">
+          <Alert className="bg-muted/50">
+            <MessageCircle className="h-4 w-4" />
+            <AlertDescription className="text-sm">
+              Need emergency help? Call 0800 428 428 (GBV Command Centre) • 10111 (Police) • 112 (Medical)
+            </AlertDescription>
+          </Alert>
+        </div>
       </div>
     </div>
   );
